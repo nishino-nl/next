@@ -1,18 +1,18 @@
-# This is a sample Python script.
-
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+#!/usr/bin/env python
 
 import json
 import os
 
 
-CONFIG_PATH = "../etc/versioning.json"
+DEFAULT_CONFIG_PATH = "../etc/versioning.json"
 
 
 class RepositoryManager:
     def __init__(self, repository):
-        with open(CONFIG_PATH) as config_file:
+        bin_dir = os.path.dirname(__file__)
+        config_path = os.path.normpath(f"{bin_dir}/{DEFAULT_CONFIG_PATH}")
+
+        with open(config_path) as config_file:
             self.configuration = json.load(config_file)
         self.repository = repository
 
@@ -27,15 +27,12 @@ class RepositoryManager:
         elif path[0] == "~":
             # path in homedir
             homedir = os.path.expanduser(path.split("/")[0])
-            subdirs = "/".join(path.split("/")[1:])
-            full_path = os.path.join(homedir, subdirs)
+            sub_dirs = "/".join(path.split("/")[1:])
+            full_path = os.path.join(homedir, sub_dirs)
 
         return full_path or path
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     vm = RepositoryManager("backend")
     print(f"backend: {vm.get_repo_dir()}")
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
