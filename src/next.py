@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import git
 import json
 import os
@@ -34,7 +35,21 @@ class RepositoryManager:
         assert not repo.bare
         return full_path
 
+def read_version():
+    with open("VERSION") as f:
+        return f.read()
+
 
 if __name__ == '__main__':
+    # Parse arguments
+    parser = argparse.ArgumentParser(description="Next version for next release")
+    parser.add_argument("-c", "--configuration-file")
+    parser.add_argument("-r", "--repository")
+    parser.add_argument("-s", "--staging-branch")
+    parser.add_argument("-p", "--production-branch")
+    parser.add_argument("--version", action="version", version=f"{read_version()}")
+    args = parser.parse_args()
+    print(args)
+
     vm = RepositoryManager("backend")
     print(f"repo: {vm.get_repo_dir()}")  # Just to prove the repo could be used
