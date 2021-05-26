@@ -35,7 +35,7 @@ class Configuration:
         })
 
     @classmethod
-    def config_from_file(cls, config_file_path, repository_name):
+    def config_from_file(cls, config_file_path, project_name):
         """
         Provide a valid `RepositoryManager.Configuration` object, based on a configuration file, to use for initialization of a new `RepositoryManager`.
         """
@@ -43,7 +43,7 @@ class Configuration:
         _normalized_path = os.path.normpath(f"{_bin_dir}/{config_file_path}")
         with open(_normalized_path) as config_file:
             json_config = json.load(config_file)
-            repo_config = json_config["projects"][repository_name]
+            repo_config = json_config["projects"][project_name]
 
             repo_path = full_path(repo_config["path"])
             staging_branch = repo_config["branches"]["staging"]
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     )
     file_config_group = parser.add_argument_group("configuration with file")
     file_config_group.add_argument("-c", "--configuration-file", default=DEFAULT_CONFIG_PATH)
-    file_config_group.add_argument("-r", "--repository-name")
+    file_config_group.add_argument("-p", "--project-name")
 
     # TODO: implement args for manual configuration
     # manual_config_group = parser.add_argument_group("manual configuration")
@@ -115,7 +115,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    config = Configuration.config_from_file(args.configuration_file, args.repository_name)
+    config = Configuration.config_from_file(args.configuration_file, args.project_name)
     rm = RepositoryManager(config)
 
     # PoC to prove the repo could be used
