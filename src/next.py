@@ -43,7 +43,7 @@ class Configuration:
         _normalized_path = os.path.normpath(f"{_bin_dir}/{config_file_path}")
         with open(_normalized_path) as config_file:
             json_config = json.load(config_file)
-            repo_config = json_config["repositories"][repository_name]
+            repo_config = json_config["projects"][repository_name]
 
             repo_path = full_path(repo_config["path"])
             staging_branch = repo_config["branches"]["staging"]

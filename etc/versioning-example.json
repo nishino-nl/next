@@ -1,5 +1,5 @@
 {
-  "repositories": {
+  "projects": {
     "backend": {
       "path": "~/repos/some-repo-clone",
       "branches": {
