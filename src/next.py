@@ -3,14 +3,23 @@
 import argparse
 import git
 import json
-import os
 
-from lib import full_path
+from enum import Enum
 
+from lib import *
 
-DEFAULT_CONFIG_PATH = "../etc/versioning.json"
+DEFAULT_SETTINGS_PATH = "../etc/versioning.json"
 DEFAULT_STAGING_BRANCH = "develop"
 DEFAULT_PRODUCTION_BRANCH = "master"
+
+
+class VersionLevel(Enum):
+    MAJOR = 0
+    MINOR = 1
+    PATCH = 2
+
+    def __str__(self):
+        return self.name.lower()
 
 
 class Configuration:
@@ -21,21 +30,24 @@ class Configuration:
     repo_path: str = None
     staging_branch: str = None
     production_branch: str = None
+    version_file: str = None
 
-    def __init__(self, repo_path, staging_branch, production_branch):
+    def __init__(self, repo_path, staging_branch, production_branch, version_file):
         self.repo_path = repo_path
         self.staging_branch = staging_branch
         self.production_branch = production_branch
+        self.version_file = version_file
 
     def __repr__(self):
         return json.dumps({
             "repo_path": self.repo_path,
             "staging_branch": self.staging_branch,
-            "production_branch": self.production_branch
+            "production_branch": self.production_branch,
+            "version_file": self.version_file
         })
 
     @classmethod
-    def config_from_file(cls, config_file_path, project_name):
+    def config_from_file(cls, config_file_path, project):
         """
         Provide a valid `RepositoryManager.Configuration` object, based on a configuration file, to use for initialization of a new `RepositoryManager`.
         """
@@ -43,20 +55,21 @@ class Configuration:
         _normalized_path = os.path.normpath(f"{_bin_dir}/{config_file_path}")
         with open(_normalized_path) as config_file:
             json_config = json.load(config_file)
-            repo_config = json_config["projects"][project_name]
+            repo_config = json_config["projects"][project]
 
             repo_path = full_path(repo_config["path"])
             staging_branch = repo_config["branches"]["staging"]
             production_branch = repo_config["branches"]["production"]
+            version_file = repo_config["version_file"]
 
-            return Configuration(repo_path, staging_branch, production_branch)
+            return Configuration(repo_path, staging_branch, production_branch, version_file)
 
     @classmethod
-    def config_from_manual_input(cls, repo_path, staging_branch, production_branch):
+    def config_from_manual_input(cls, repo_path, staging_branch, production_branch, version_file):
         """
         Provide a valid `RepositoryManager.Configuration` object, based on manual configuration options, to use for initialization of a new `RepositoryManager`.
         """
-        return Configuration(repo_path, staging_branch, production_branch)
+        return Configuration(repo_path, staging_branch, production_branch, version_file)
 
 
 class RepositoryManager:
@@ -66,15 +79,17 @@ class RepositoryManager:
 
     _configuration = None
     _repository = None
+    _version: tuple = None
 
     def __init__(self, config):
         """
         Initialize a new `RepositoryManager`, based on a `RepositoryManager.Configuration`.
         """
-        self._config = config
-        assert self._config.repo_path
-        self._repository = git.Repo(self._config.repo_path)
+        self._configuration = config
+        assert self._configuration.repo_path
+        self._repository = git.Repo(self._configuration.repo_path)
         assert not self._repository.bare
+        self._version = self.get_version()
 
     @property
     def conf(self):
@@ -90,10 +105,48 @@ class RepositoryManager:
         """
         return self._repository
 
+    def get_version(self) -> tuple:
+        """
+        Get version number from the VERSION file in the repository.
+        """
+        _version_file = os.path.normpath(f"{self.conf.repo_path}/{self.conf.version_file}")
+        return read_version(_version_file)
 
-def read_version():
-    with open("VERSION") as f:
-        return f.read()
+    def store_version(self, version: tuple):
+        """
+        Store version number to internal state and to the VERSION file in the repository
+
+        :param version: the version to store.
+        """
+        _version_file = os.path.normpath(f"{self.conf.repo_path}/{self.conf.version_file}")
+        write_version(version, _version_file)
+        self._version = version
+
+    @property
+    def version(self):
+        return self._version
+
+    def bump_version(self, level: int) -> tuple:
+        """
+        Bump version based on a given level.
+
+        :param level: one of `major`, `minor` or `patch`.
+        :return: version after the bump has taken place.
+        """
+        major, minor, patch = self.version
+
+        new_version = (
+            major + 1 if level is VersionLevel.MAJOR.value
+            else major,
+            minor + 1 if level is VersionLevel.MINOR.value
+            else 0 if level < VersionLevel.MINOR.value
+            else minor,
+            patch + 1 if level is VersionLevel.PATCH.value
+            else 0,
+        )
+
+        self.store_version(new_version)
+        return new_version
 
 
 if __name__ == '__main__':
@@ -102,9 +155,15 @@ if __name__ == '__main__':
         description="Next version for next release",
         epilog="Website: https://github.com/swesterveld/next"
     )
-    file_config_group = parser.add_argument_group("configuration with file")
-    file_config_group.add_argument("-c", "--configuration-file", default=DEFAULT_CONFIG_PATH)
-    file_config_group.add_argument("-p", "--project-name")
+    parser.add_argument("bump_level", choices=[
+        str(VersionLevel(level)) for level in VersionLevel
+    ])
+    parser.add_argument("--settings", action=argparse.BooleanOptionalAction, help="whether to use a settings-file for your configuration, or provide the settings manually")
+    parser.add_argument("--version", action="version", version=f"{read_version('VERSION')}")
+
+    file_config_group = parser.add_argument_group("required when using a settings-file for your configuration")
+    file_config_group.add_argument("-f", "--settings-file", default=DEFAULT_SETTINGS_PATH)
+    file_config_group.add_argument("-p", "--project")
 
     # TODO: implement args for manual configuration
     # manual_config_group = parser.add_argument_group("manual configuration")
@@ -115,10 +174,23 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    config = Configuration.config_from_file(args.configuration_file, args.project_name)
+    # bail out when --settings has been set without providing its required arguments --settings-file and --project
+    if args.settings and not (args.settings_file and args.project):
+        print(f"Exiting because both --settings-file and --project are required when using a settings-file for your configuration\n")
+        parser.print_help()
+        exit(2)
+
+    config = Configuration.config_from_file(args.settings_file, args.project)
     rm = RepositoryManager(config)
 
+    # TODO: remove when finished, as it was only meant for debugging
     # PoC to prove the repo could be used
-    repo = rm.repo
-    print(f"branches: {repo.branches}")
-    print(f"heads: {repo.heads}")
+    # repo = rm.repo
+    # print(f"branches: {repo.branches}")
+    # print(f"heads: {repo.heads}")
+
+    # TODO: remove when finished, as it was only meant for debugging
+    # PoC for version-bumping
+    # current_version = rm.version
+    # bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
+    # print(f"bumped {args.bump_level} version from {version_tpl_to_str(current_version)} to {version_tpl_to_str(bumped_version)}")
