@@ -183,6 +183,9 @@ class RepositoryManager:
         Merge staging-branch into production-branch to prepare for deployment to production.
         """
         # TODO: implement merge + push on master
+        self.staging.checkout()
+        self.repo.git.merge(production)
+
         self.production.checkout()
         self.repo.git.merge(staging)
         pass
