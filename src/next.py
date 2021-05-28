@@ -174,9 +174,17 @@ class RepositoryManager:
             print("There are still changes not staged for commit. Either commit or discard them first")
             exit(1)
 
-    def update_head(self, ):
+    def update_head(self, head=None):
         """
         """
+        if head is not None:
+            head.checkout()
+
+        print(f"current branch: {repo.active_branch}")
+        print(f"head: {head} ({type(head)})")
+        origin.fetch()
+        origin.pull()
+
         pass
 
 
@@ -231,9 +239,10 @@ if __name__ == '__main__':
     # check out branches for staging and master and make sure their HEADs are up-to-date
     prior_branch = repo.active_branch
 
-    staging.checkout()
-    print(f"current branch: {repo.active_branch}")
-    print(f"staging: {staging} ({type(staging)})")
+    rm.update_head(staging)
+    # staging.checkout()
+    # print(f"current branch: {repo.active_branch}")
+    # print(f"staging: {staging} ({type(staging)})")
     exit(0)
     origin.fetch()
     origin.pull()
