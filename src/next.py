@@ -46,6 +46,10 @@ class Configuration:
             "version_file": self.version_file
         })
 
+    @property
+    def production(self):
+        return self.repo.heads[self.conf.production_branch]
+
     @classmethod
     def config_from_file(cls, config_file_path, project):
         """
@@ -171,7 +175,12 @@ class RepositoryManager:
         pass
 
     def prepare_production(self):
+        """
+        Merge staging-branch into production-branch to prepare for deployment to production.
+        """
         # TODO: implement merge + push on master
+        self.production.checkout()
+        self.repo.git.merge(staging)
         pass
 
     def verify_repo_clean(self) -> None:
@@ -257,11 +266,10 @@ if __name__ == '__main__':
     # bump version
     bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
 
-    #
-
     # checkout production-branch and merge staging-branch into it
-    production.checkout()
-    repo.git.merge(staging)
+    rm.prepare_production()
+
+    #
 
     # push production-branch
     origin.push()
