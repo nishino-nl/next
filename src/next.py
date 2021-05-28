@@ -165,7 +165,7 @@ class RepositoryManager:
         # stage, commit and push VERSION file to staging-branch
         _index = self.repo.index
         _index.add([self.conf.version_file])
-        _index.commit(f"automated {bump_level}-version bump from {version_tpl_to_str(self.version)} to {_bumped_version_str}")
+        _index.commit(f"automated {VersionLevel(bump_level).name.lower()}-level version bump from {version_tpl_to_str(self.version)} to {_bumped_version_str}")
         origin.push()
 
         # tag latest commit with bumped version and push it to staging-branch
@@ -271,10 +271,8 @@ if __name__ == '__main__':
     rm.update_head(production)
 
     # bump version
-    print(f"VersionLevel: {VersionLevel[args.bump_level.upper()]}")
-    print(f"VersionLevel.value: {VersionLevel[args.bump_level.upper()].value}")
-    exit(0)
     bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
+    exit(0)
 
     # checkout production-branch and merge staging-branch into it
     rm.prepare_production()
