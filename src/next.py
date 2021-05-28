@@ -126,6 +126,7 @@ class RepositoryManager:
     def version(self) -> tuple:
         return self._version
 
+    # TODO: maybe refactor `bump_version()` to `release_next(level: {major,minor,patch})`
     def bump_version(self, bump_level: int) -> tuple:
         """
         Bump version based on a given level.
@@ -151,13 +152,17 @@ class RepositoryManager:
 
         # bump version on staging branch
         staging.checkout()
-        bumped_version_str = version_tpl_to_str(new_version)
+        _bumped_version_str = version_tpl_to_str(new_version)
 
         # stage, commit and push VERSION file to staging-branch
-        index = self.repo.index
-        index.add([self.conf.version_file])
-        index.commit(f"automated {bump_level}-version bump from {version_tpl_to_str(self.version)} to {bumped_version_str}")
+        _index = self.repo.index
+        _index.add([self.conf.version_file])
+        _index.commit(f"automated {bump_level}-version bump from {version_tpl_to_str(self.version)} to {_bumped_version_str}")
         origin.push()
+
+        # tag latest commit with bumped version and push it to staging-branch
+        new_tag = repo.create_tag(f"v{_bumped_version_str}")
+        origin.push(new_tag)
 
         return new_version
 
@@ -254,11 +259,6 @@ if __name__ == '__main__':
 
     #
 
-    # tag latest commit with bumped version and push it to staging-branch
-    bumped_version_str = version_tpl_to_str(bump_version)
-    new_tag = repo.create_tag(f"v{bumped_version_str}")
-    origin.push(new_tag)
-
     # checkout production-branch and merge staging-branch into it
     production.checkout()
     repo.git.merge(staging)
@@ -271,4 +271,4 @@ if __name__ == '__main__':
     print(f"current branch: {repo.active_branch}")
 
     # TODO: implement deploy
-    print(f"Released version {bumped_version_str}. Ready to deploy...")
+    print(f"Released version {version_tpl_to_str(bumped_version_str)}. Ready to deploy...")
