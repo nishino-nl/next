@@ -194,6 +194,7 @@ if __name__ == '__main__':
     assert origin.exists()
 
     origin.fetch()
+    # TODO: fix GitCommandError due to current branch not existing yet on remote
     origin.pull()
 
     # make sure repo is clean
@@ -234,4 +235,5 @@ if __name__ == '__main__':
 
     # TODO: return to branch where we originally started from
 
-    # ready to deploy
+    # TODO: implement deploy
+    print(f"Released version {bumped_version_str}. Ready to deploy...")
