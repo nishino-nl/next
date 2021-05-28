@@ -156,6 +156,22 @@ class RepositoryManager:
         # TODO: implement merge + push on master
         pass
 
+    def verify_repo_clean(self):
+        # make sure repo is clean
+        changes_to_be_committed = index.diff(repo.head.commit)
+        try:
+            assert changes_to_be_committed == []
+        except AssertionError:
+            print("There are still changes to be committed. Either commit or unstage and discard them first.")
+            exit(1)
+
+        changes_not_staged = index.diff(None)
+        try:
+            assert changes_not_staged == []
+        except AssertionError:
+            print("There are still changes not staged for commit. Either commit or discard them first")
+            exit(1)
+
 
 if __name__ == '__main__':
     # Parse arguments with argparse (https://docs.python.org/3/library/argparse.html)
@@ -201,20 +217,7 @@ if __name__ == '__main__':
     origin = repo.remotes.origin
     assert origin.exists()
 
-    # make sure repo is clean
-    changes_to_be_committed = index.diff(repo.head.commit)
-    try:
-        assert changes_to_be_committed == []
-    except AssertionError:
-        print("There are still changes to be committed. Either commit or unstage and discard them first.")
-        exit(1)
-
-    changes_not_staged = index.diff(None)
-    try:
-        assert changes_not_staged == []
-    except AssertionError:
-        print("There are still changes not staged for commit. Either commit or discard them first")
-        exit(1)
+    rm.verify_repo_clean()
 
     # check out branches for staging and master and make sure their HEADs are up-to-date
     prior_branch = repo.active_branch
@@ -227,7 +230,6 @@ if __name__ == '__main__':
     production.checkout()
     print(f"current branch: {repo.active_branch}")
     origin.fetch()
-    # TODO: fix GitCommandError due to current branch not existing yet on remote
     origin.pull()
 
     # checkout develop
