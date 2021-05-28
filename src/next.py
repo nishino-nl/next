@@ -46,10 +46,6 @@ class Configuration:
             "version_file": self.version_file
         })
 
-    @property
-    def production(self):
-        return self.repo.heads[self.conf.production_branch]
-
     @classmethod
     def config_from_file(cls, config_file_path, project):
         """
@@ -108,6 +104,14 @@ class RepositoryManager:
         Get the `git.Repo` object.
         """
         return self._repository
+
+    @property
+    def production(self):
+        return self.repo.heads[self.conf.production_branch]
+
+    @property
+    def staging(self):
+        return self.repo.heads[self.conf.staging_branch]
 
     def get_version(self) -> tuple:
         """
