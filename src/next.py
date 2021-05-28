@@ -186,7 +186,7 @@ if __name__ == '__main__':
     if args.settings and not (args.settings_file and args.project):
         print(f"Exiting because both --settings-file and --project are required when using a settings-file for your configuration\n")
         parser.print_help()
-        exit(2)
+        exit(1)
 
     # bump version for project in configuration
     config = Configuration.config_from_file(args.settings_file, args.project)
@@ -201,22 +201,33 @@ if __name__ == '__main__':
     origin = repo.remotes.origin
     assert origin.exists()
 
-    origin.fetch()
-    # TODO: fix GitCommandError due to current branch not existing yet on remote
-    origin.pull()
-
     # make sure repo is clean
-    diff_index_commits_tree = index.diff(repo.head.commit)
+    changes_to_be_committed = index.diff(repo.head.commit)
     try:
-        assert diff_index_commits_tree == []
+        assert changes_to_be_committed == []
     except AssertionError:
-        print("There are still changes to be committed. Either commit or unstage them first.")
+        print("There are still changes to be committed. Either commit or unstage and discard them first.")
         exit(1)
 
-    # checkout master
-    production.checkout()
+    changes_not_staged = index.diff(None)
+    try:
+        assert changes_not_staged == []
+    except AssertionError:
+        print("There are still changes not staged for commit. Either commit or discard them first")
+        exit(1)
 
-    # make sure HEAD of master branch is up-to-date (pulled)
+    # check out branches for staging and master and make sure their HEADs are up-to-date
+    prior_branch = repo.active_branch
+
+    staging.checkout()
+    print(f"current branch: {repo.active_branch}")
+    origin.fetch()
+    origin.pull()
+
+    production.checkout()
+    print(f"current branch: {repo.active_branch}")
+    origin.fetch()
+    # TODO: fix GitCommandError due to current branch not existing yet on remote
     origin.pull()
 
     # checkout develop
@@ -242,6 +253,8 @@ if __name__ == '__main__':
     origin.push()
 
     # TODO: return to branch where we originally started from
+    repo.git.checkout(prior_branch)
+    print(f"current branch: {repo.active_branch}")
 
     # TODO: implement deploy
     print(f"Released version {bumped_version_str}. Ready to deploy...")
