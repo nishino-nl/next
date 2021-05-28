@@ -123,7 +123,7 @@ class RepositoryManager:
         self._version = version
 
     @property
-    def version(self):
+    def version(self) -> tuple:
         return self._version
 
     def bump_version(self, level: int) -> tuple:
@@ -147,6 +147,14 @@ class RepositoryManager:
 
         self.store_version(new_version)
         return new_version
+
+    def release(self):
+        # TODO: implement bump + commit + push on develop
+        pass
+
+    def prepare_production(self):
+        # TODO: implement merge + push on master
+        pass
 
 
 if __name__ == '__main__':
