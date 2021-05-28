@@ -180,13 +180,8 @@ class RepositoryManager:
         if head is not None:
             head.checkout()
 
-        print(f"current branch: {repo.active_branch}")
-        print(f"head: {head} ({type(head)})")
         origin.fetch()
         origin.pull()
-
-        pass
-
 
 
 if __name__ == '__main__':
@@ -238,24 +233,11 @@ if __name__ == '__main__':
 
     # check out branches for staging and master and make sure their HEADs are up-to-date
     prior_branch = repo.active_branch
-
     rm.update_head(staging)
-    # staging.checkout()
-    # print(f"current branch: {repo.active_branch}")
-    # print(f"staging: {staging} ({type(staging)})")
-    exit(0)
-    origin.fetch()
-    origin.pull()
+    rm.update_head(production)
 
-    production.checkout()
-    print(f"current branch: {repo.active_branch}")
-    origin.fetch()
-    origin.pull()
-
-    # checkout develop
+    # bump version on staging branch
     staging.checkout()
-
-    # bump version
     bumped_version_str = version_tpl_to_str(rm.bump_version(VersionLevel[args.bump_level.upper()].value))
 
     # stage, commit and push VERSION file to staging-branch
