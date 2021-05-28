@@ -180,17 +180,58 @@ if __name__ == '__main__':
         parser.print_help()
         exit(2)
 
+    # bump version for project in configuration
     config = Configuration.config_from_file(args.settings_file, args.project)
     rm = RepositoryManager(config)
+    current_version_str = version_tpl_to_str(rm.version)
 
-    # TODO: remove when finished, as it was only meant for debugging
-    # PoC to prove the repo could be used
-    # repo = rm.repo
-    # print(f"branches: {repo.branches}")
-    # print(f"heads: {repo.heads}")
+    repo = rm.repo
+    staging = repo.heads[rm.conf.staging_branch]
+    production = repo.heads[rm.conf.production_branch]
+    index = repo.index
 
-    # TODO: remove when finished, as it was only meant for debugging
-    # PoC for version-bumping
-    # current_version = rm.version
-    # bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
-    # print(f"bumped {args.bump_level} version from {version_tpl_to_str(current_version)} to {version_tpl_to_str(bumped_version)}")
+    origin = repo.remotes.origin
+    assert origin.exists()
+
+    origin.fetch()
+    origin.pull()
+
+    # make sure repo is clean
+    diff_index_commits_tree = index.diff(repo.head.commit)
+    try:
+        assert diff_index_commits_tree == []
+    except AssertionError:
+        print("There are still changes to be committed. Either commit or unstage them first.")
+        exit(1)
+
+    # checkout master
+    production.checkout()
+
+    # make sure HEAD of master branch is up-to-date (pulled)
+    origin.pull()
+
+    # checkout develop
+    staging.checkout()
+
+    # bump version
+    bumped_version_str = version_tpl_to_str(rm.bump_version(VersionLevel[args.bump_level.upper()].value))
+
+    # stage, commit and push VERSION file to staging-branch
+    index.add([rm.conf.version_file])
+    index.commit(f"automated {args.bump_level}-version bump from {current_version_str} to {bumped_version_str}")
+    origin.push()
+
+    # tag latest commit with bumped version and push it to staging-branch
+    new_tag = repo.create_tag(f"v{bumped_version_str}")
+    origin.push(new_tag)
+
+    # checkout production-branch and merge staging-branch into it
+    production.checkout()
+    repo.git.merge(staging)
+
+    # push production-branch
+    origin.push()
+
+    # TODO: return to branch where we originally started from
+
+    # ready to deploy
