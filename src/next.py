@@ -155,12 +155,12 @@ class RepositoryManager:
             else 0,
         )
 
-        # store new version in VERSION-file (as single source of truth)
-        self.store_version(new_version)
-
-        # bump version on staging branch
+        # switch to staging branch, to start version bumping
         staging.checkout()
         _bumped_version_str = version_tpl_to_str(new_version)
+
+        # store new version in VERSION-file (as single source of truth)
+        self.store_version(new_version)
 
         # stage, commit and push VERSION file to staging-branch
         _index = self.repo.index
@@ -263,7 +263,7 @@ if __name__ == '__main__':
     assert origin.exists()
 
     # make sure repo is clean
-    # rm.verify_repo_clean()  # TODO: uncomment before finishing feature
+    rm.verify_repo_clean()
 
     # check out branches for staging and master and make sure their HEADs are up-to-date
     prior_branch = repo.active_branch
