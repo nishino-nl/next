@@ -114,7 +114,7 @@ class RepositoryManager:
 
     def store_version(self, version: tuple):
         """
-        Store version number to internal state and to the VERSION file in the repository
+        Store version number to internal state and to the VERSION file in the repository.
 
         :param version: the version to store.
         """
@@ -156,8 +156,10 @@ class RepositoryManager:
         # TODO: implement merge + push on master
         pass
 
-    def verify_repo_clean(self):
-        # make sure repo is clean
+    def verify_repo_clean(self) -> None:
+        """
+        Check for any local changes on the active branch.
+        """
         changes_to_be_committed = index.diff(repo.head.commit)
         try:
             assert changes_to_be_committed == []
@@ -171,6 +173,12 @@ class RepositoryManager:
         except AssertionError:
             print("There are still changes not staged for commit. Either commit or discard them first")
             exit(1)
+
+    def update_head(self, ):
+        """
+        """
+        pass
+
 
 
 if __name__ == '__main__':
@@ -217,13 +225,16 @@ if __name__ == '__main__':
     origin = repo.remotes.origin
     assert origin.exists()
 
-    rm.verify_repo_clean()
+    # make sure repo is clean
+    # rm.verify_repo_clean()
 
     # check out branches for staging and master and make sure their HEADs are up-to-date
     prior_branch = repo.active_branch
 
     staging.checkout()
     print(f"current branch: {repo.active_branch}")
+    print(f"staging: {staging} ({type(staging)})")
+    exit(0)
     origin.fetch()
     origin.pull()
 
