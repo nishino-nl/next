@@ -126,26 +126,39 @@ class RepositoryManager:
     def version(self) -> tuple:
         return self._version
 
-    def bump_version(self, level: int) -> tuple:
+    def bump_version(self, bump_level: int) -> tuple:
         """
         Bump version based on a given level.
 
-        :param level: one of `major`, `minor` or `patch`.
+        :param bump_level: one of `major`, `minor` or `patch`.
         :return: version after the bump has taken place.
         """
         major, minor, patch = self.version
 
+        # define new version based on current version and bump-level (major|minor|patch)
         new_version = (
-            major + 1 if level is VersionLevel.MAJOR.value
+            major + 1 if bump_level is VersionLevel.MAJOR.value
             else major,
-            minor + 1 if level is VersionLevel.MINOR.value
-            else 0 if level < VersionLevel.MINOR.value
+            minor + 1 if bump_level is VersionLevel.MINOR.value
+            else 0 if bump_level < VersionLevel.MINOR.value
             else minor,
-            patch + 1 if level is VersionLevel.PATCH.value
+            patch + 1 if bump_level is VersionLevel.PATCH.value
             else 0,
         )
 
+        # store new version in VERSION-file (as single source of truth)
         self.store_version(new_version)
+
+        # bump version on staging branch
+        staging.checkout()
+        bumped_version_str = version_tpl_to_str(new_version)
+
+        # stage, commit and push VERSION file to staging-branch
+        index = self.repo.index
+        index.add([self.conf.version_file])
+        index.commit(f"automated {bump_level}-version bump from {version_tpl_to_str(self.version)} to {bumped_version_str}")
+        origin.push()
+
         return new_version
 
     def release(self):
@@ -229,23 +242,20 @@ if __name__ == '__main__':
     assert origin.exists()
 
     # make sure repo is clean
-    # rm.verify_repo_clean()
+    # rm.verify_repo_clean()  # TODO: uncomment before finishing feature
 
     # check out branches for staging and master and make sure their HEADs are up-to-date
     prior_branch = repo.active_branch
     rm.update_head(staging)
     rm.update_head(production)
 
-    # bump version on staging branch
-    staging.checkout()
-    bumped_version_str = version_tpl_to_str(rm.bump_version(VersionLevel[args.bump_level.upper()].value))
+    # bump version
+    bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
 
-    # stage, commit and push VERSION file to staging-branch
-    index.add([rm.conf.version_file])
-    index.commit(f"automated {args.bump_level}-version bump from {current_version_str} to {bumped_version_str}")
-    origin.push()
+    #
 
     # tag latest commit with bumped version and push it to staging-branch
+    bumped_version_str = version_tpl_to_str(bump_version)
     new_tag = repo.create_tag(f"v{bumped_version_str}")
     origin.push(new_tag)
 
