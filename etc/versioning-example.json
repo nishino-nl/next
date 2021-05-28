@@ -1,18 +1,20 @@
 {
   "projects": {
     "backend": {
-      "path": "~/repos/some-repo-clone",
+      "path": "~/repos/some-repo-clone-of-backend-project",
       "branches": {
         "staging": "develop",
         "production": "master"
-      }
+      },
+      "version_file": "VERSION"
     },
     "frontend": {
-      "path": "/home/jdoe/repos/some-repo-clone",
+      "path": "/home/jdoe/repos/some-repo-clone-of-frontend-clone",
       "branches": {
         "staging": "develop",
         "production": "master"
-      }
+      },
+      "version_file": "VERSION"
     }
   }
 }
