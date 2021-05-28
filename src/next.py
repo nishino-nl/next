@@ -142,7 +142,7 @@ class RepositoryManager:
         :param bump_level: one of `major`, `minor` or `patch`.
         :return: version after the bump has taken place.
         """
-        major, minor, patch = self.version
+        major, minor, patch = original_version = self.version
 
         # define new version based on current version and bump-level (major|minor|patch)
         new_version = (
@@ -165,7 +165,7 @@ class RepositoryManager:
         # stage, commit and push VERSION file to staging-branch
         _index = self.repo.index
         _index.add([self.conf.version_file])
-        _index.commit(f"automated {VersionLevel(bump_level).name.lower()}-level version bump from {version_tpl_to_str(self.version)} to {_bumped_version_str}")
+        _index.commit(f"automated {VersionLevel(bump_level).name.lower()}-level version bump from {version_tpl_to_str(original_version)} to {_bumped_version_str}")
         origin.push()
 
         # tag latest commit with bumped version and push it to staging-branch
@@ -210,6 +210,7 @@ class RepositoryManager:
 
     def update_head(self, head=None):
         """
+        Update HEAD to branch tip on remote
         """
         if head is not None:
             head.checkout()
@@ -272,7 +273,6 @@ if __name__ == '__main__':
 
     # bump version
     bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
-    exit(0)
 
     # checkout production-branch and merge staging-branch into it
     rm.prepare_production()
