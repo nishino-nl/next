@@ -271,6 +271,9 @@ if __name__ == '__main__':
     rm.update_head(production)
 
     # bump version
+    print(f"VersionLevel: {VersionLevel[args.bump_level.upper()]}")
+    print(f"VersionLevel.value: {VersionLevel[args.bump_level.upper()].value}")
+    exit(0)
     bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
 
     # checkout production-branch and merge staging-branch into it
