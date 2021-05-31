@@ -110,6 +110,7 @@ class RepositoryManager:
         """
         return self._repository
 
+    @property
     def origin(self):
         return self.repo.remotes.origin
 
@@ -166,7 +167,7 @@ class RepositoryManager:
         )
 
         # switch to staging branch, to start version bumping
-        staging.checkout()
+        self.staging.checkout()
         _bumped_version_str = version_tpl_to_str(new_version)
 
         # store new version in VERSION-file (as single source of truth)
@@ -178,7 +179,7 @@ class RepositoryManager:
         _index = self.repo.index
         _index.add([self.conf.version_file])
         _index.commit(f"automated {VersionLevel(bump_level).name.lower()}-level version bump from {version_tpl_to_str(original_version)} to {_bumped_version_str}")
-        origin.push()
+        self.origin.push()
 
         return new_version
 
@@ -196,20 +197,20 @@ class RepositoryManager:
         # check out branches for staging and master and make sure their HEADs are up-to-date
         prior_branch = self.repo.active_branch
         self.update_head(self.staging)
-        self.update_head(production)
+        self.update_head(self.production)
 
         # bump version
         bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
         bumped_version_str = version_tpl_to_str(bumped_version)
-        new_tag = repo.create_tag(f"v{bumped_version_str}")
-        origin.push(new_tag)
+        new_tag = self.repo.create_tag(f"v{bumped_version_str}")
+        self.origin.push(new_tag)
 
         # push production-branch
-        origin.push()
+        self.origin.push()
 
         # TODO: return to branch where we originally started from
-        repo.git.checkout(prior_branch)
-        print(f"current branch: {repo.active_branch}")
+        self.repo.git.checkout(prior_branch)
+        print(f"current branch: {self.repo.active_branch}")
         return bumped_version
 
     def prepare_production(self):
@@ -218,17 +219,18 @@ class RepositoryManager:
         """
         # TODO: implement merge + push on master
         self.staging.checkout()
-        self.repo.git.merge(production)
+        self.repo.git.merge(self.production)
 
         self.production.checkout()
-        self.repo.git.merge(staging)
+        self.repo.git.merge(self.staging)
         pass
 
     def verify_repo_clean(self) -> None:
         """
         Check for any local changes on the active branch.
         """
-        changes_to_be_committed = index.diff(repo.head.commit)
+        index = self.repo.index
+        changes_to_be_committed = index.diff(self.repo.head.commit)
         try:
             assert changes_to_be_committed == []
         except AssertionError:
@@ -249,8 +251,8 @@ class RepositoryManager:
         if head is not None:
             head.checkout()
 
-        origin.fetch()
-        origin.pull()
+        self.origin.fetch()
+        self.origin.pull()
 
 
 if __name__ == '__main__':
@@ -289,13 +291,6 @@ if __name__ == '__main__':
     rm = RepositoryManager(config)
     current_version_str = version_tpl_to_str(rm.version)
 
-    repo = rm.repo
-    staging = repo.heads[rm.conf.staging_branch]
-    production = repo.heads[rm.conf.production_branch]
-    index = repo.index
-
-    origin = repo.remotes.origin
-    assert origin.exists()
 
     # release bumped version
     new_version = rm.release(args.bump_level)
