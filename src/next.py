@@ -22,6 +22,11 @@ class VersionLevel(Enum):
         return self.name.lower()
 
 
+class Environment(Enum):
+    DEVELOPMENT = 0
+    PRODUCTION = 1
+
+
 class Configuration:
     """
     Entity that holds the configuration required for initialization of a `RepositoryManager`.
@@ -105,6 +110,9 @@ class RepositoryManager:
         """
         return self._repository
 
+    def origin(self):
+        return self.repo.remotes.origin
+
     @property
     def production(self):
         return self.repo.heads[self.conf.production_branch]
@@ -139,6 +147,8 @@ class RepositoryManager:
         """
         Bump version based on a given level.
 
+        The `VERSION` file will be updated with bumped version (and committed to staging-branch).
+
         :param bump_level: one of `major`, `minor` or `patch`.
         :return: version after the bump has taken place.
         """
@@ -162,21 +172,45 @@ class RepositoryManager:
         # store new version in VERSION-file (as single source of truth)
         self.store_version(new_version)
 
+        # TODO: if VERSION needs to be updated in other files (like `package.json`) as well, do it here
+
         # stage, commit and push VERSION file to staging-branch
         _index = self.repo.index
         _index.add([self.conf.version_file])
         _index.commit(f"automated {VersionLevel(bump_level).name.lower()}-level version bump from {version_tpl_to_str(original_version)} to {_bumped_version_str}")
         origin.push()
 
-        # tag latest commit with bumped version and push it to staging-branch
-        new_tag = repo.create_tag(f"v{_bumped_version_str}")
-        origin.push(new_tag)
-
         return new_version
 
-    def release(self):
+    def release(self, bump_level: VersionLevel, environment: Environment = Environment.DEVELOPMENT) -> tuple:
+        """
+        Tag latest commit on the staging-branch with a version based on the given bump-level.
+        """
         # TODO: implement bump + commit + push on develop
-        pass
+
+        assert self.origin.exists()
+
+        # make sure repo is clean
+        self.verify_repo_clean()
+
+        # check out branches for staging and master and make sure their HEADs are up-to-date
+        prior_branch = self.repo.active_branch
+        self.update_head(self.staging)
+        self.update_head(production)
+
+        # bump version
+        bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
+        bumped_version_str = version_tpl_to_str(bumped_version)
+        new_tag = repo.create_tag(f"v{bumped_version_str}")
+        origin.push(new_tag)
+
+        # push production-branch
+        origin.push()
+
+        # TODO: return to branch where we originally started from
+        repo.git.checkout(prior_branch)
+        print(f"current branch: {repo.active_branch}")
+        return bumped_version
 
     def prepare_production(self):
         """
@@ -263,28 +297,11 @@ if __name__ == '__main__':
     origin = repo.remotes.origin
     assert origin.exists()
 
-    # make sure repo is clean
-    rm.verify_repo_clean()
-
-    # check out branches for staging and master and make sure their HEADs are up-to-date
-    prior_branch = repo.active_branch
-    rm.update_head(staging)
-    rm.update_head(production)
-
-    # bump version
-    bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
+    # release bumped version
+    new_version = rm.release(args.bump_level)
 
     # checkout production-branch and merge staging-branch into it
     rm.prepare_production()
 
-    #
-
-    # push production-branch
-    origin.push()
-
-    # TODO: return to branch where we originally started from
-    repo.git.checkout(prior_branch)
-    print(f"current branch: {repo.active_branch}")
-
     # TODO: implement deploy
-    print(f"Released version {version_tpl_to_str(bumped_version)}. Ready to deploy...")
+    print(f"Released version {version_tpl_to_str(new_version)}. Ready to deploy...")
