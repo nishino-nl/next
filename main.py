@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
-from src.lib import version_tpl_to_str
-from src.next import Configuration, RepositoryManager, VersionLevel, read_version, DEFAULT_SETTINGS_PATH
+# Just a useful example of how to use the example_pkg package
+
+from src.example_pkg.lib import version_tpl_to_str
+from src.example_pkg.next import Configuration, RepositoryManager, VersionLevel, read_version, DEFAULT_SETTINGS_PATH
 
 import argparse
 

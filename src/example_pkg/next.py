@@ -5,7 +5,7 @@ from enum import Enum
 
 from .lib import *
 
-DEFAULT_SETTINGS_PATH = "../etc/versioning.json"
+DEFAULT_SETTINGS_PATH = "../../etc/versioning.json"
 DEFAULT_STAGING_BRANCH = "develop"
 DEFAULT_PRODUCTION_BRANCH = "master"
 

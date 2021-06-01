@@ -14,6 +14,7 @@ def full_path(path):
         homedir = os.path.expanduser(path.split("/")[0])
         sub_dirs = "/".join(path.split("/")[1:])
         _path = os.path.join(homedir, sub_dirs)
+    # TODO: (also) handle absolute paths
 
     return _path
 
