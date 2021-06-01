@@ -90,6 +90,8 @@ class RepositoryManager:
     _repository = None
     _version: tuple = None
 
+    _to_stage: list = []
+
     def __init__(self, config):
         """
         Initialize a new `RepositoryManager`, based on a `RepositoryManager.Configuration`.
@@ -141,6 +143,7 @@ class RepositoryManager:
         """
         _version_file = os.path.normpath(f"{self.conf.repo_path}/{self.conf.version_file}")
         write_version(version, _version_file)
+        self._to_stage.append(_version_file)
         self._version = version
 
     @property
@@ -172,7 +175,6 @@ class RepositoryManager:
 
         # switch to staging branch, to start version bumping
         self.staging.checkout()
-        _bumped_version_str = version_tpl_to_str(new_version)
 
         # store new version in VERSION-file (as single source of truth)
         self.store_version(new_version)
@@ -186,17 +188,18 @@ class RepositoryManager:
             with open(_metadata_path, "r+") as metadata_file:
                 metadata = json.load(metadata_file)
                 print(f"current version: {metadata['version']}")
-                metadata["version"] = _bumped_version_str
+                metadata["version"] = version_tpl_to_str(new_version)
 
                 # overwrite contents of metadata file with updated metadata
                 metadata_file.seek(0)
                 json.dump(metadata, metadata_file, indent=2)
                 metadata_file.truncate()
+                self._to_stage.append(_metadata_path)
 
         # stage, commit and push VERSION file to staging-branch
         _index = self.repo.index
-        _index.add([self.conf.version_file])
-        _index.commit(f"automated {VersionLevel(bump_level).name.lower()}-level version bump from {version_tpl_to_str(original_version)} to {_bumped_version_str}")
+        _index.add(self._to_stage)
+        _index.commit(f"automated {VersionLevel(bump_level).name.lower()}-level version bump from {version_tpl_to_str(original_version)} to {version_tpl_to_str(new_version)}")
         self.origin.push()
 
         return new_version
