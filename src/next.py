@@ -36,19 +36,22 @@ class Configuration:
     staging_branch: str = None
     production_branch: str = None
     version_file: str = None
+    package_metadata: str = None
 
-    def __init__(self, repo_path, staging_branch, production_branch, version_file):
+    def __init__(self, repo_path: str, staging_branch: str, production_branch: str, version_file: str, package_metadata: str = None):
         self.repo_path = repo_path
         self.staging_branch = staging_branch
         self.production_branch = production_branch
         self.version_file = version_file
+        self.package_metadata = package_metadata
 
     def __repr__(self):
         return json.dumps({
             "repo_path": self.repo_path,
             "staging_branch": self.staging_branch,
             "production_branch": self.production_branch,
-            "version_file": self.version_file
+            "version_file": self.version_file,
+            "package_metadata": self.package_metadata or None,
         })
 
     @classmethod
@@ -66,15 +69,16 @@ class Configuration:
             staging_branch = repo_config["branches"]["staging"]
             production_branch = repo_config["branches"]["production"]
             version_file = repo_config["version_file"]
+            package_metadata = repo_config["package_metadata"] if "package_metadata" in repo_config else None
 
-            return Configuration(repo_path, staging_branch, production_branch, version_file)
+            return Configuration(repo_path, staging_branch, production_branch, version_file, package_metadata)
 
     @classmethod
-    def config_from_manual_input(cls, repo_path, staging_branch, production_branch, version_file):
+    def config_from_manual_input(cls, repo_path, staging_branch, production_branch, version_file, package_metadata = None):
         """
         Provide a valid `RepositoryManager.Configuration` object, based on manual configuration options, to use for initialization of a new `RepositoryManager`.
         """
-        return Configuration(repo_path, staging_branch, production_branch, version_file)
+        return Configuration(repo_path, staging_branch, production_branch, version_file, package_metadata)
 
 
 class RepositoryManager:
@@ -173,7 +177,21 @@ class RepositoryManager:
         # store new version in VERSION-file (as single source of truth)
         self.store_version(new_version)
 
-        # TODO: if VERSION needs to be updated in other files (like `package.json`) as well, do it here
+        # if VERSION needs to be updated in other files (like `package.json`) as well, do it here
+        if self.conf.package_metadata:
+            # update package metadata
+            print(f"update metadata in {self.conf.package_metadata}")
+            _metadata_path = os.path.normpath(f"{self.conf.repo_path}/{self.conf.package_metadata}")
+
+            with open(_metadata_path, "r+") as metadata_file:
+                metadata = json.load(metadata_file)
+                print(f"current version: {metadata['version']}")
+                metadata["version"] = _bumped_version_str
+
+                # overwrite contents of metadata file with updated metadata
+                metadata_file.seek(0)
+                json.dump(metadata, metadata_file, indent=2)
+                metadata_file.truncate()
 
         # stage, commit and push VERSION file to staging-branch
         _index = self.repo.index
@@ -187,8 +205,6 @@ class RepositoryManager:
         """
         Tag latest commit on the staging-branch with a version based on the given bump-level.
         """
-        # TODO: implement bump + commit + push on develop
-
         assert self.origin.exists()
 
         # make sure repo is clean
@@ -290,7 +306,6 @@ if __name__ == '__main__':
     config = Configuration.config_from_file(args.settings_file, args.project)
     rm = RepositoryManager(config)
     current_version_str = version_tpl_to_str(rm.version)
-
 
     # release bumped version
     new_version = rm.release(args.bump_level)
