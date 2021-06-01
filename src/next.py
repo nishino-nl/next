@@ -226,31 +226,28 @@ class RepositoryManager:
         self.update_head(self.staging)
         self.update_head(self.production)
 
-        # bump version
+        # bump version and push to origin
         bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
         bumped_version_str = version_tpl_to_str(bumped_version)
         new_tag = self.repo.create_tag(f"v{bumped_version_str}")
         self.origin.push(new_tag)
-
-        # push production-branch
         self.origin.push()
 
-        # TODO: return to branch where we originally started from
+        # return to branch where we originally started from
         self.repo.git.checkout(prior_branch)
-        print(f"current branch: {self.repo.active_branch}")
         return bumped_version
 
     def prepare_production(self):
         """
         Merge staging-branch into production-branch to prepare for deployment to production.
         """
-        # TODO: implement merge + push on master
         self.staging.checkout()
         self.repo.git.merge(self.production)
+        self.origin.push()
 
         self.production.checkout()
         self.repo.git.merge(self.staging)
-        pass
+        self.origin.push()
 
     def verify_repo_clean(self) -> None:
         """
