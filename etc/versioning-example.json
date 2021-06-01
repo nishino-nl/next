@@ -9,12 +9,13 @@
       "version_file": "VERSION"
     },
     "frontend": {
-      "path": "/home/jdoe/repos/some-repo-clone-of-frontend-clone",
+      "path": "/home/jdoe/repos/some-repo-clone-of-frontend-project",
       "branches": {
         "staging": "develop",
         "production": "master"
       },
-      "version_file": "VERSION"
+      "version_file": "VERSION",
+      "package_metadata": "package.json"
     }
   }
 }
