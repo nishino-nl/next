@@ -128,6 +128,14 @@ class RepositoryManager:
     def staging(self):
         return self.repo.heads[self.conf.staging_branch]
 
+    def stage(self, file_path):
+        self._to_stage.append(file_path)
+        self._to_stage = list(set(self._to_stage))
+
+    @property
+    def staged(self):
+        return self._to_stage
+
     def get_version(self) -> tuple:
         """
         Get version number from the VERSION file in the repository.
@@ -143,7 +151,7 @@ class RepositoryManager:
         """
         _version_file = os.path.normpath(f"{self.conf.repo_path}/{self.conf.version_file}")
         write_version(version, _version_file)
-        self._to_stage.append(_version_file)
+        self.stage(_version_file)
         self._version = version
 
     @property
@@ -194,11 +202,11 @@ class RepositoryManager:
                 metadata_file.seek(0)
                 json.dump(metadata, metadata_file, indent=2)
                 metadata_file.truncate()
-                self._to_stage.append(_metadata_path)
+                self.stage(_metadata_path)
 
         # stage, commit and push VERSION file to staging-branch
         _index = self.repo.index
-        _index.add(self._to_stage)
+        _index.add(self.staged)
         _index.commit(f"automated {VersionLevel(bump_level).name.lower()}-level version bump from {version_tpl_to_str(original_version)} to {version_tpl_to_str(new_version)}")
         self.origin.push()
 
