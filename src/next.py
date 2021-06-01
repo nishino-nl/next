@@ -227,7 +227,7 @@ class RepositoryManager:
         self.update_head(self.production)
 
         # bump version and push to origin
-        bumped_version = rm.bump_version(VersionLevel[args.bump_level.upper()].value)
+        bumped_version = self.bump_version(VersionLevel[bump_level.upper()].value)
         bumped_version_str = version_tpl_to_str(bumped_version)
         new_tag = self.repo.create_tag(f"v{bumped_version_str}")
         self.origin.push(new_tag)
