@@ -14,11 +14,10 @@ if __name__ == '__main__':
         str(VersionLevel(level)) for level in VersionLevel
     ])
     parser.add_argument("--settings", action=argparse.BooleanOptionalAction, help="whether to use a settings-file for your configuration, or provide the settings manually")
-    parser.add_argument("--version", action="version", version=f"{read_version('VERSION')}")
+    # parser.add_argument("--version", action="version", version=f"{read_version('VERSION')}")  # TODO: fix this argument
 
     file_config_group = parser.add_argument_group("required when using a settings-file for your configuration")
-    file_config_group.add_argument("-f", "--settings-file", default=DEFAULT_SETTINGS_PATH)
-    # file_config_group.add_argument("-f", "--settings-file")
+    file_config_group.add_argument("-f", "--settings-file")
     file_config_group.add_argument("-p", "--project")
 
     # TODO: implement args for manual configuration

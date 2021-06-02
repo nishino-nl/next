@@ -5,7 +5,6 @@ from enum import Enum
 
 from .lib import *
 
-DEFAULT_SETTINGS_PATH = "../../etc/versioning.json"
 DEFAULT_STAGING_BRANCH = "develop"
 DEFAULT_PRODUCTION_BRANCH = "master"
 
@@ -56,8 +55,8 @@ class Configuration:
         """
         Provide a valid `RepositoryManager.Configuration` object, based on a configuration file, to use for initialization of a new `RepositoryManager`.
         """
-        _bin_dir = os.path.dirname(__file__)
-        _normalized_path = os.path.normpath(f"{_bin_dir}/{config_file_path}")
+        _cwd = os.getcwd()
+        _normalized_path = os.path.normpath(f"{_cwd}/{config_file_path}")
         with open(_normalized_path) as config_file:
             json_config = json.load(config_file)
             repo_config = json_config["projects"][project]

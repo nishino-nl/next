@@ -1,5 +1,6 @@
-# next
-Next version for next release
+# NeVer - Next Version
+Never forget how to release a Next Version.
+
 
 ## how to use
 
@@ -30,8 +31,10 @@ required when using a settings-file for your configuration:
 Website: https://github.com/swesterveld/next
 ```
 
-## settings
 
+### settings
+
+Currently, the `--no-settings` flag doesn't work yet, so you should use a settings file.
 The settings file should be JSON-formatted. Its contents should be like:
 
 ```json
@@ -56,6 +59,14 @@ The settings file should be JSON-formatted. Its contents should be like:
     }
   }
 }
+```
+
+
+### run
+
+An example, to bump the version from x.y.z to x.y.z+1 for project `frontend` defined in `etc/never.config.json`:
+```
+never patch --settings -f etc/never.config.json -p frontend
 ```
 
 

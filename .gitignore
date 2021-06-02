@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # Config files
-etc/versioning.json
+etc/never.config.json
