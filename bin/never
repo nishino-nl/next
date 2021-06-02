@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
-# Just a useful example of how to use the example_pkg package
-
-from src.example_pkg.lib import version_tpl_to_str
-from src.example_pkg.next import Configuration, RepositoryManager, VersionLevel, read_version, DEFAULT_SETTINGS_PATH
+from never import VersionLevel, read_version, Configuration, RepositoryManager, version_tpl_to_str
 
 import argparse
 
@@ -21,6 +18,7 @@ if __name__ == '__main__':
 
     file_config_group = parser.add_argument_group("required when using a settings-file for your configuration")
     file_config_group.add_argument("-f", "--settings-file", default=DEFAULT_SETTINGS_PATH)
+    # file_config_group.add_argument("-f", "--settings-file")
     file_config_group.add_argument("-p", "--project")
 
     # TODO: implement args for manual configuration

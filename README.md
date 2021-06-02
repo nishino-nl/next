@@ -8,9 +8,9 @@ Setup an environment with the dependencies once, if you haven't done that yet.
 ```shell
 $ python -m venv .venv
 $ source .venv/bin/activate
-$ pip install -r requirements.txt
-$ python src/next.py -h
-usage: next.py [-h] [--settings | --no-settings] [--version] [-f SETTINGS_FILE] [-p PROJECT] {major,minor,patch}
+$ pip install never
+$ never -h
+usage: never [-h] [--settings | --no-settings] [--version] [-f SETTINGS_FILE] [-p PROJECT] {major,minor,patch}
 
 Next version for next release
 
@@ -30,9 +30,33 @@ required when using a settings-file for your configuration:
 Website: https://github.com/swesterveld/next
 ```
 
-## execute
+## settings
 
-TODO: document how to execute
+The settings file should be JSON-formatted. Its contents should be like:
+
+```json
+{
+  "projects": {
+    "backend": {
+      "path": "~/repos/some-repo-clone-of-backend-project",
+      "branches": {
+        "staging": "develop",
+        "production": "master"
+      },
+      "version_file": "VERSION"
+    },
+    "frontend": {
+      "path": "/home/jdoe/repos/some-repo-clone-of-frontend-project",
+      "branches": {
+        "staging": "develop",
+        "production": "master"
+      },
+      "version_file": "VERSION",
+      "package_metadata": "package.json"
+    }
+  }
+}
+```
 
 
 ## dependencies
