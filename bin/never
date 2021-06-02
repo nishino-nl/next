@@ -7,7 +7,7 @@ import argparse
 if __name__ == '__main__':
     # Parse arguments with argparse (https://docs.python.org/3/library/argparse.html)
     parser = argparse.ArgumentParser(
-        description="Next version for next release",
+        description="Ne-ver again the manual hassle to release a next version",
         epilog="Website: https://github.com/swesterveld/next"
     )
     parser.add_argument("bump_level", choices=[

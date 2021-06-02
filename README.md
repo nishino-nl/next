@@ -1,5 +1,5 @@
-# NeVer - Next Version
-Never forget how to release a Next Version.
+# ne-ver - Next Version
+Ne-ver again the manual hassle to release a next version.
 
 
 ## how to use
@@ -9,11 +9,11 @@ Setup an environment with the dependencies once, if you haven't done that yet.
 ```shell
 $ python -m venv .venv
 $ source .venv/bin/activate
-$ pip install never
+$ pip install ne-ver
 $ never -h
-usage: never [-h] [--settings | --no-settings] [--version] [-f SETTINGS_FILE] [-p PROJECT] {major,minor,patch}
+usage: never [-h] [--settings | --no-settings] [-f SETTINGS_FILE] [-p PROJECT] {major,minor,patch}
 
-Next version for next release
+Ne-ver again the manual hassle to release a next version
 
 positional arguments:
   {major,minor,patch}
@@ -22,7 +22,6 @@ optional arguments:
   -h, --help            show this help message and exit
   --settings, --no-settings
                         whether to use a settings-file for your configuration, or provide the settings manually
-  --version             show program's version number and exit
 
 required when using a settings-file for your configuration:
   -f SETTINGS_FILE, --settings-file SETTINGS_FILE
