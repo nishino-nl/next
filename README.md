@@ -64,7 +64,7 @@ The settings file should be JSON-formatted. Its contents should be like:
 
 ### run
 
-An example, to bump the version from x.y.z to x.y.z+1 for project `frontend` defined in `etc/never.config.json`:
+An example, to bump the version from `x.y.z` to `x.y.z+1` for project `frontend` defined in `etc/never.config.json`:
 ```
 never patch --settings -f etc/never.config.json -p frontend
 ```
