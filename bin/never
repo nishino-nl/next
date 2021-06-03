@@ -44,7 +44,7 @@ if __name__ == '__main__':
     new_version = rm.release(args.bump_level)
 
     # checkout production-branch and merge staging-branch into it
-    rm.prepare_production()
+    # rm.prepare_production()  # TODO: implement (optional) merge to production branch
 
     # TODO: implement deploy
     print(f"Released version {version_tpl_to_str(new_version)}. Ready to deploy...")
