@@ -6,7 +6,7 @@ Ne-ver again the manual hassle to release a next version.
 
 Setup an environment with the dependencies once, if you haven't done that yet.
 
-```shell
+```commandline
 $ python -m venv .venv
 $ source .venv/bin/activate
 $ pip install ne-ver
@@ -64,8 +64,15 @@ The settings file should be JSON-formatted. Its contents should be like:
 ### run
 
 An example, to bump the version from `x.y.z` to `x.y.z+1` for project `frontend` defined in `etc/never.config.json`:
-```
+```commandline
 never patch --settings -f etc/never.config.json -p frontend
+```
+
+
+## release to PyPI
+```commandline
+python -m build
+python -m twine upload --repository pypi dist/*
 ```
 
 
@@ -74,6 +81,7 @@ never patch --settings -f etc/never.config.json -p frontend
 This project has some dependencies mentioned in the `requirements.txt` file.
 Documentation of these Python packages could be found at:
 * [GitPython](https://gitpython.readthedocs.io/en/stable/)
+* [PyGithub](https://pygithub.readthedocs.io/en/latest/)
 
 Other dependencies, from the Python Standard Library, are documented here:
 * [argparse](https://docs.python.org/3/library/argparse.html)
