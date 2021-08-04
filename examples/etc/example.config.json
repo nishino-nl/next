@@ -3,6 +3,7 @@
     "backend": {
       "path": "~/repos/some-repo-clone-of-backend-project",
       "branches": {
+        "release": "release/{version}",
         "staging": "develop",
         "production": "master"
       },
@@ -11,6 +12,7 @@
     "frontend": {
       "path": "/home/jdoe/repos/some-repo-clone-of-frontend-project",
       "branches": {
+        "release": "release/{version}",
         "staging": "develop",
         "production": "master"
       },
