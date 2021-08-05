@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from never import Configuration, RepositoryManager
+from never import Configuration, RepositoryManager, ReleaseManager
 from never.lib import bump_level_from_str, version_tpl_to_str, VersionLevel
 
 import argparse
@@ -38,14 +38,16 @@ if __name__ == '__main__':
 
     # bump version for project in configuration
     config = Configuration.config_from_file(args.settings_file, args.project)
-    rm = RepositoryManager(config)
+    repository_manager = RepositoryManager(config)
+
     bump_level = bump_level_from_str(args.bump_level)
+    release_manager = ReleaseManager(config, repository_manager, bump_level)
 
     # release bumped version
-    new_version = rm.release(bump_level)
+    new_version = release_manager.release(bump_level)
 
     # checkout production-branch and merge staging-branch into it
-    # rm.prepare_production()  # TODO: implement (optional) merge to production branch
+    # repository_manager.prepare_production()  # TODO: implement (optional) merge to production branch
 
     # TODO: implement deploy
     print(f"Released version {version_tpl_to_str(new_version)}. Ready to deploy...")

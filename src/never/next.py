@@ -9,38 +9,35 @@ class Configuration:
     Entity that holds the configuration required for initialization of a `RepositoryManager`.
     """
 
-    # TODO: sort
-    repo_path: str = None
-    release_branch: str = None
-    staging_branch: str = None
-    production_branch: str = None
-    version_file: str = None
-    package_metadata: str = None
-
-    def __init__(self, repo_path: str, release_branch: str, staging_branch: str, production_branch: str, version_file: str, package_metadata: str = None):
-        # TODO: sort
-        self.repo_path = repo_path
-        self.release_branch = release_branch
-        self.staging_branch = staging_branch
-        self.production_branch = production_branch
-        self.version_file = version_file
-        self.package_metadata = package_metadata
+    def __init__(self, repo_path: str, production_branch: str, release_branch: str, staging_branch: str,
+                 package_metadata: str = None, version_file: str = DEFAULT_VERION_FILE):
+        # project path
+        self.repo_path: str = repo_path
+        # branches
+        self.production_branch: str = production_branch
+        self.release_branch: str = release_branch
+        self.staging_branch: str = staging_branch
+        # package data
+        self.package_metadata: str = package_metadata
+        self.version_file: str = version_file
 
     def __repr__(self):
-        # TODO: sort
         return json.dumps({
+            # project path
             "repo_path": self.repo_path,
+            # branches
+            "production_branch": self.production_branch,
             "release_branch": self.release_branch,
             "staging_branch": self.staging_branch,
-            "production_branch": self.production_branch,
+            # package data
+            "package_metadata": self.package_metadata,
             "version_file": self.version_file,
-            "package_metadata": self.package_metadata or None,
         })
 
     @classmethod
     def config_from_file(cls, config_file_path, project):
         """
-        Provide a valid `RepositoryManager.Configuration` object, based on a configuration file, to use for initialization of a new `RepositoryManager`.
+        Provide a valid `Configuration` object, based on a configuration file, to use for initialization of a new `RepositoryManager`.
         """
         _cwd = os.getcwd()
         _normalized_path = os.path.normpath(f"{_cwd}/{config_file_path}")
@@ -48,46 +45,45 @@ class Configuration:
             json_config = json.load(config_file)
             repo_config = json_config["projects"][project]
 
+            # project path
             repo_path = full_path(repo_config["path"])
+            # branches
+            production_branch = repo_config["branches"]["production"]
             release_branch = repo_config["branches"]["release"]
             staging_branch = repo_config["branches"]["staging"]
-            production_branch = repo_config["branches"]["production"]
-            version_file = repo_config["version_file"]
+            # package data
             package_metadata = repo_config["package_metadata"] if "package_metadata" in repo_config else None
+            version_file = repo_config["version_file"]
 
-            return Configuration(repo_path, release_branch, staging_branch, production_branch, version_file, package_metadata)
+            return Configuration(repo_path, production_branch, release_branch, staging_branch, package_metadata, version_file)
 
     @classmethod
-    def config_from_manual_input(cls, repo_path, release_branch, staging_branch, production_branch, version_file, package_metadata = None):
+    def config_from_manual_input(cls, repo_path, production_branch, release_branch, staging_branch,
+                                 package_metadata = None, version_file = DEFAULT_VERION_FILE):
         """
-        Provide a valid `RepositoryManager.Configuration` object, based on manual configuration options, to use for initialization of a new `RepositoryManager`.
+        Provide a valid `Configuration` object, based on manual configuration options, to use for initialization of a new `RepositoryManager`.
         """
-        return Configuration(repo_path, release_branch, staging_branch, production_branch, version_file, package_metadata)
+        return Configuration(repo_path, production_branch, release_branch, staging_branch, package_metadata, version_file)
 
 
 class RepositoryManager:
     """
     Entity through which the repository should be managed.
+    It keeps track of the repository's state, and could help to change its state in a controlled manner.
     """
 
-    _configuration = None
-    _prior_branch = None
-    _repository = None
-    _version: tuple = None
-
-    _to_stage: list = []
-
-    def __init__(self, config):
+    def __init__(self, config: Configuration, *args, **kwargs):
         """
-        Initialize a new `RepositoryManager`, based on a `RepositoryManager.Configuration` and the current state.
+        Initialize a new `RepositoryManager`, based on a `Configuration` and the current state.
         """
-        self._configuration = config
+        self._configuration: Configuration = config
         assert self._configuration.repo_path
         self._repository = git.Repo(self._configuration.repo_path)
         assert not self._repository.bare
 
-        self._version = self.get_version()
         self._prior_branch = self.repo.active_branch
+        self._to_stage: list = []
+        self._version: tuple = None
 
     @property
     def conf(self):
@@ -95,6 +91,13 @@ class RepositoryManager:
         Get the `Configuration` object used by this `RepositoryManager`.
         """
         return self._configuration
+
+    @property
+    def index(self):
+        """
+        Get the index (staged files)
+        """
+        return self.repo.index
 
     @property
     def repo(self):
@@ -115,121 +118,20 @@ class RepositoryManager:
     def staging(self):
         return self.repo.heads[self.conf.staging_branch]
 
-    def stage(self, file_path):
+    def mark_to_stage(self, file_path):
         self._to_stage.append(file_path)
         self._to_stage = list(set(self._to_stage))
 
     @property
-    def staged(self):
+    def marked_to_stage(self):
         return self._to_stage
-
-    def get_version(self) -> tuple:
-        """
-        Get version number from the VERSION file in the repository.
-        """
-        _version_file = os.path.normpath(f"{self.conf.repo_path}/{self.conf.version_file}")
-        return read_version(_version_file)
-
-    def store_version(self, version: tuple):
-        """
-        Store version number to internal state and to the VERSION file in the repository.
-
-        :param version: the version to store.
-        """
-        _version_file = os.path.normpath(f"{self.conf.repo_path}/{self.conf.version_file}")
-        write_version(version, _version_file)
-        self.stage(_version_file)
-        self._version = version
-
-    @property
-    def version(self) -> tuple:
-        return self._version
-
-    # TODO: maybe refactor `bump_version()` to `release_next(level: {major,minor,patch})`
-    def bump_version(self, bump_level: VersionLevel) -> tuple:
-        """
-        Bump version based on a given level.
-
-        The `VERSION` file will be updated with bumped version (and committed to current branch).
-
-        :param bump_level: the VersionLevel (IntEnum) to bump.
-        :return: version after the bump has taken place.
-        """
-        original_version = self.version
-        new_version = determine_next_version(self.version, bump_level)
-
-        # store new version in VERSION-file (as single source of truth)
-        self.store_version(new_version)
-
-        # if VERSION needs to be updated in other files (like `package.json`) as well, do it here
-        if self.conf.package_metadata:
-            # TODO: support multiple metadata filetypes (currently only working for package.json files)
-            # update package metadata
-            print(f"update metadata in {self.conf.package_metadata}")
-            _metadata_path = os.path.normpath(f"{self.conf.repo_path}/{self.conf.package_metadata}")
-
-            with open(_metadata_path, "r+") as metadata_file:
-                metadata = json.load(metadata_file)
-                print(f"current version: {metadata['version']}")
-                metadata["version"] = version_tpl_to_str(new_version)
-
-                # overwrite contents of metadata file with updated metadata
-                metadata_file.seek(0)
-                json.dump(metadata, metadata_file, indent=2)
-                metadata_file.truncate()
-                self.stage(_metadata_path)
-
-        # stage, commit and push VERSION file to current branch
-        _index = self.repo.index
-        _index.add(self.staged)
-        _index.commit(f"automated {VersionLevel(bump_level).name.lower()}-level version bump from {version_tpl_to_str(original_version)} to {version_tpl_to_str(new_version)}")
-
-        return new_version
-
-    def release(self, bump_level: VersionLevel, environment: Environment = Environment.DEVELOPMENT) -> tuple:
-        """
-        Tag latest commit on the staging-branch with a version based on the given bump-level.
-        """
-        assert self.origin.exists() # TODO: error-handling
-
-        # make sure repo is clean
-        self.verify_repo_clean() # TODO: include error-handling
-
-        # check out branches for staging and production and make sure their HEADs are up-to-date
-        prior_branch = self.repo.active_branch
-        self.update_head(self.staging)
-        self.update_head(self.production)
-        prior_branch.checkout()
-
-        # determine next version
-        next_version = determine_next_version(self.version, bump_level)
-
-        # check release strategy (separate branch, or just version-tag-commit)
-        if self.conf.release_branch:
-            branch_name = self.prepare_release_branch(next_version)
-            print(f"releasing to dedicated release-branch: {branch_name}")
-        else:
-            print(f"releasing to existing branch: {self.repo.active_branch}")
-
-        # bump version and push to origin
-        bumped_version = self.bump_version(bump_level)
-        bumped_version_str = version_tpl_to_str(bumped_version)
-        new_tag = self.repo.create_tag(f"v{bumped_version_str}")
-
-        self.origin.push(new_tag)
-        self.origin.push(refspec=f"{branch_name}:{branch_name}")
-
-        # return to branch where we originally started from
-        if self._prior_branch:
-            self.repo.git.checkout(self._prior_branch)
-        # print(f"bumped to version: {bumped_version}")
-        return bumped_version
 
     def prepare_release_branch(self, new_version: tuple):
         """
         Create dedicated release branch, based on new version.
         """
         # TODO: first make sure we're on develop
+        print(f"{self.repo.active_branch} ({type(self.repo.active_branch)})")
         self.staging.checkout()
 
         # branch_name = f"release/v{version_tpl_to_str(new_version)}"
@@ -242,6 +144,48 @@ class RepositoryManager:
         assert not self.repo.head.is_detached
         # self.repo.head.reset(index=True, working_tree=True)
         return branch_name
+
+    # def prepare_production(self):
+    #     """
+    #     Merge staging-branch into production-branch to prepare for deployment to production.
+    #     """
+    #     self.staging.checkout()
+    #     self.repo.git.merge(self.production)
+    #     self.origin.push()
+    #
+    #     self.production.checkout()
+    #     self.repo.git.merge(self.staging)
+    #     self.origin.push()
+
+    def stage_commit_tag_push(self, original_version: tuple, new_version: tuple, bump_level: VersionLevel) -> None:
+        """
+        Stage and commit files marked to stage, add tag and push.
+        """
+        branch_name = self.repo.active_branch
+
+        # stage, commit and push VERSION file to current branch
+        self.index.add(self.marked_to_stage)
+
+        bump_level_str = VersionLevel(bump_level).name.lower()
+        original_version_str = version_tpl_to_str(original_version)
+        new_version_str = version_tpl_to_str(new_version)
+        commit_msg = f"automated {bump_level}-level version bump from {original_version_str} to {new_version_str}"
+        self.index.commit(commit_msg)
+
+        self.tag_version(new_version)
+        self.origin.push(refspec=f"{branch_name}:{branch_name}")
+
+
+    def tag_version(self, version: tuple) -> None:
+        """
+        Tag current HEAD with given version.
+
+        :param version: the version to use for the tag
+        """
+        tag_str = f"v{version_tpl_to_str(version)}"
+        new_tag = self.repo.create_tag(tag_str)
+        self.origin.push(new_tag)
+        print(f"added tag: {new_tag}")
 
     def verify_repo_clean(self) -> None:
         """
@@ -269,5 +213,116 @@ class RepositoryManager:
         if head is not None:
             head.checkout()
 
-        self.origin.fetch()
         self.origin.pull()
+
+
+class ReleaseManager:
+    """
+    Entity in control of releasing next version.
+    """
+
+    def __init__(self, configuration: Configuration, repository: RepositoryManager, bump_level: VersionLevel):
+        self._bump_level: VersionLevel = bump_level
+        self._configuration: Configuration = configuration
+        self._repository: RepositoryManager = repository
+
+        self._current_version = self.get_version()
+        self._next_version = determine_next_version(self._current_version, bump_level)
+
+    def bump_version(self) -> tuple:
+        """
+        Bump version to the next version, based on current version and bump-level.
+
+        The `VERSION` file will be updated with bumped version (and staged to the index).
+        """
+        # store next version in VERSION-file (as single source of truth)
+        new_version = self.store_version(self.next_version)
+
+        # if VERSION needs to be updated in other files (like `package.json`) as well, also do that here
+        if self.conf.package_metadata:
+            # TODO: support multiple metadata filetypes (currently only working for package.json files)
+            # update package metadata
+            print(f"update metadata in {self.conf.package_metadata}")
+            _metadata_path = os.path.normpath(f"{self.conf.repo_path}/{self.conf.package_metadata}")
+
+            with open(_metadata_path, "r+") as metadata_file:
+                metadata = json.load(metadata_file)
+                print(f"current version: {metadata['version']}")
+                metadata["version"] = version_tpl_to_str(self.new_version)
+
+                # overwrite contents of metadata file with updated metadata
+                metadata_file.seek(0)
+                json.dump(metadata, metadata_file, indent=2)
+                metadata_file.truncate()
+                self._repository.mark_to_stage(_metadata_path)
+
+        return new_version
+
+    @property
+    def conf(self):
+        """
+        Get the `Configuration` object used by this `RepositoryManager`.
+        """
+        return self._configuration
+
+    def get_version(self) -> tuple:
+        """
+        Get version number from the VERSION file in the repository.
+        """
+        _version_file = os.path.normpath(f"{self.conf.repo_path}/{self.conf.version_file}")
+        return read_version(_version_file)
+
+    @property
+    def next_version(self) -> tuple:
+        if self.version is self._next_version or self._next_version is None:
+            self._next_version = determine_next_version(self.version, self._bump_level)
+        return self._next_version
+
+    def store_version(self, version: tuple):
+        """
+        Store version number to internal state and to the VERSION file in the repository.
+
+        :param version: the version to store.
+        """
+        _version_file = os.path.normpath(f"{self.conf.repo_path}/{self.conf.version_file}")
+        write_version(version, _version_file)
+        self._repository.mark_to_stage(_version_file)
+        self._current_version = version
+        return version
+
+    @property
+    def version(self) -> tuple:
+        return self._current_version
+
+    def release(self, bump_level: VersionLevel, environment: Environment = Environment.DEVELOPMENT) -> tuple:
+        """
+        Release new version, based on current version and bump-level; bump version, commit, tag and push.
+        """
+        assert self._repository.origin.exists() # TODO: error-handling
+
+        # make sure repo is clean
+        self._repository.verify_repo_clean() # TODO: include error-handling
+
+        # check out branches for staging and production and make sure their HEADs are up-to-date
+        prior_branch = self._repository.repo.active_branch
+        self._repository.update_head(self._repository.staging)
+        self._repository.update_head(self._repository.production)
+        prior_branch.checkout()
+
+        original_version = self.version
+
+        # check release strategy (separate branch, or just version-tag-commit)
+        if self.conf.release_branch:
+            branch_name = self._repository.prepare_release_branch(self.next_version)
+            print(f"releasing to dedicated release-branch: {branch_name}")
+        else:
+            print(f"releasing to existing branch: {self._repository.repo.active_branch}")
+
+        # bump version, commit, tag and push to origin
+        new_version = self.bump_version()
+        self._repository.stage_commit_tag_push(original_version, new_version, bump_level)
+
+        # return to branch where we originally started from
+        if self._repository._prior_branch:
+            self._repository.repo.git.checkout(self._repository._prior_branch)
+        return new_version
