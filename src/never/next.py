@@ -1,10 +1,12 @@
 import git
 import json
+import requests
+# from requests.cookies import RequestsCookieJar
 
 from .lib import *
 
 
-class Configuration:
+class Configuration:  # TODO: aparte module
     """
     Entity that holds the configuration required for initialization of a `RepositoryManager`.
     """
@@ -214,6 +216,45 @@ class RepositoryManager:
             head.checkout()
 
         self.origin.pull()
+
+    def create_pull_request(self, repo_owner, repo_name, title, description, head_branch, base_branch, git_token):
+        """
+        Creates a Pull Request for the `head_branch` against the `base_branch`.
+
+        :param repo_owner:
+        :param repo_name:
+        :param title:
+        :param description:
+        :param head_branch:
+        :param base_branch:
+        :param git_token:
+        :return:
+        """
+        # TODO: implement
+        git_pulls_api = f"https://api.github.com/repos/{repo_owner}/{repo_name}/pulls"
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "Authorization": f"token {git_token}",
+            "Content-Type": "application/json",
+            "User-Agent": "ne-ver"
+        }
+        payload = {
+            "title": title,
+            "body": description,
+            "head": head_branch,
+            "base": base_branch,
+        }
+
+        session = requests.Session()
+
+        r = requests.post(
+            git_pulls_api,
+            headers=headers,
+            data=json.dumps(payload),
+        )
+
+        if not r.ok:
+            print("Request Failed: {0}".format(r.text))
 
 
 class ReleaseManager:

@@ -31,6 +31,15 @@ Website: https://github.com/swesterveld/next
 ```
 
 
+### GitHub token
+
+A GitHub token is required to let `never` create pull requests for you.
+Make sure to generate a personal access token in [your GitHub Developer Settings](https://github.com/settings/tokens),
+with at least the scope `repo` -- for full control of private repositories -- selected.
+
+Add this token to your `.env` file, which should be based on the `.env.example` file.
+
+
 ### settings
 
 Currently, the `--no-settings` flag doesn't work yet, so you should use a settings file.
@@ -103,7 +112,8 @@ python -m twine upload --repository pypi dist/*
 This project has some dependencies mentioned in the `requirements.txt` file.
 Documentation of these Python packages could be found at:
 * [GitPython](https://gitpython.readthedocs.io/en/stable/)
-* [PyGithub](https://pygithub.readthedocs.io/en/latest/)
+* [python-dotenv](https://saurabh-kumar.com/python-dotenv/)
+* [Requests](https://docs.python-requests.org/en/master/)
 
 Other dependencies, from the Python Standard Library, are documented here:
 * [argparse](https://docs.python.org/3/library/argparse.html)

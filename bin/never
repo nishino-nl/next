@@ -1,11 +1,15 @@
 #!/usr/bin/env python
+import os
 
+from dotenv import load_dotenv
 from never import Configuration, RepositoryManager, ReleaseManager
 from never.lib import bump_level_from_str, version_tpl_to_str, VersionLevel
 
 import argparse
 
 if __name__ == '__main__':
+    load_dotenv()  # take environment variables from .env
+
     # Parse arguments with argparse (https://docs.python.org/3/library/argparse.html)
     parser = argparse.ArgumentParser(
         description="Ne-ver again the manual hassle to release a next version",
@@ -45,6 +49,16 @@ if __name__ == '__main__':
 
     # release bumped version
     new_version = release_manager.release(bump_level)
+
+    repository_manager.create_pull_request(
+        "swesterveld",
+        "test-scripted-versioning-backend",
+        f"Release {version_tpl_to_str(new_version)}",
+        f"Automated {VersionLevel(bump_level).name.lower()}-level version bump to {version_tpl_to_str(new_version)}",
+        f"release/{version_tpl_to_str(new_version)}",
+        repository_manager.staging.name,
+        os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
+    )
 
     # checkout production-branch and merge staging-branch into it
     # repository_manager.prepare_production()  # TODO: implement (optional) merge to production branch
