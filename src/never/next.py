@@ -169,7 +169,7 @@ class RepositoryManager:
         bump_level_str = VersionLevel(bump_level).name.lower()
         original_version_str = version_tpl_to_str(original_version)
         new_version_str = version_tpl_to_str(new_version)
-        commit_msg = f"automated {bump_level}-level version bump from {original_version_str} to {new_version_str}"
+        commit_msg = f"automated {bump_level_str}-level version bump from {original_version_str} to {new_version_str}"
         self.index.commit(commit_msg)
 
         self.tag_version(new_version)
