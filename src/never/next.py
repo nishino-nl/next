@@ -255,6 +255,9 @@ class RepositoryManager:
 
         if not r.ok:
             print("Request Failed: {0}".format(r.text))
+        else:
+            text = json.loads(r.text)
+            print(f"Created Pull Request at {text.get('html_url')}")
 
 
 class ReleaseManager:
