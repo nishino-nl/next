@@ -244,13 +244,14 @@ class RepositoryManager:
 
     def create_pull_request(self, title, description, head_branch, base_branch):
         """
-        Creates a Pull Request for the `head_branch` against the `base_branch`.
+        Creates a Pull Request for the `head_branch` against the `base_branch`, based on these GitHub docs:
 
-        :param title: Title for the Pull Request
-        :param description: Description for the Pull Request
-        :param head_branch:
-        :param base_branch:
-        :return:
+        https://docs.github.com/en/rest/reference/pulls#create-a-pull-request
+
+        :param title: The title for the new Pull Request.
+        :param description: The contents of the Pull Request.
+        :param head_branch: The name of the branch where your changes are implemented.
+        :param base_branch: The name of the branch you want the changes pulled into.
         """
         git_pulls_api = f"https://api.github.com/repos/{self.remote_info['repo_owner']}/{self.remote_info['repo_name']}/pulls"
         git_token = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
