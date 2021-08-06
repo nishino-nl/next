@@ -1,5 +1,6 @@
 import git
 import json
+import os
 import re
 import requests
 
@@ -123,15 +124,15 @@ class RepositoryManager:
         Parse info about the remote from its URL.
         At GitHub, remote URL's could be formatted like:
 
-            1. "git@github.com:<owner>/<repo_name>.git"
-            2. "https://github.com/<owner>/<repo_name>.git"
+            1. "git@github.com:<repo_owner>/<repo_name>.git"
+            2. "https://github.com/<repo_owner>/<repo_name>.git"
 
-        :return: dictionary with URL, owner and repo name
+        :return: dictionary with URL, repo owner and repo name
         """
-        owner, repo_name = re.split(r"[/:.]", self.remote_url)[-3:-1]
+        repo_owner, repo_name = re.split(r"[/:.]", self.remote_url)[-3:-1]
         info = {
             "url": self.remote_url,
-            "owner": owner,
+            "repo_owner": repo_owner,
             "repo_name": repo_name
         }
         return info
@@ -241,21 +242,18 @@ class RepositoryManager:
 
         self.origin.pull()
 
-    def create_pull_request(self, repo_owner, repo_name, title, description, head_branch, base_branch, git_token):
+    def create_pull_request(self, title, description, head_branch, base_branch):
         """
         Creates a Pull Request for the `head_branch` against the `base_branch`.
 
-        :param repo_owner:
-        :param repo_name:
-        :param title:
-        :param description:
+        :param title: Title for the Pull Request
+        :param description: Description for the Pull Request
         :param head_branch:
         :param base_branch:
-        :param git_token:
         :return:
         """
-        # TODO: implement
-        git_pulls_api = f"https://api.github.com/repos/{repo_owner}/{repo_name}/pulls"
+        git_pulls_api = f"https://api.github.com/repos/{self.remote_info['repo_owner']}/{self.remote_info['repo_name']}/pulls"
+        git_token = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
         headers = {
             "Accept": "application/vnd.github.v3+json",
             "Authorization": f"token {git_token}",
@@ -269,18 +267,16 @@ class RepositoryManager:
             "base": base_branch,
         }
 
-        session = requests.Session()
-
-        r = requests.post(
+        response = requests.post(
             git_pulls_api,
             headers=headers,
             data=json.dumps(payload),
         )
 
-        if not r.ok:
-            print("Request Failed: {0}".format(r.text))
+        if not response.ok:
+            print("Request Failed: {0}".format(response.text))
         else:
-            text = json.loads(r.text)
+            text = json.loads(response.text)
             print(f"Created Pull Request at {text.get('html_url')}")
 
 
@@ -362,7 +358,19 @@ class ReleaseManager:
     def version(self) -> tuple:
         return self._current_version
 
-    def release(self, bump_level: VersionLevel, environment: Environment = Environment.DEVELOPMENT) -> tuple:
+    def release(self, bump_level: VersionLevel) -> tuple:
+        new_version = self.prepare_release(bump_level)
+
+        self._repository.create_pull_request(
+            f"Release {version_tpl_to_str(new_version)}",
+            f"Automated {VersionLevel(bump_level).name.lower()}-level version bump to {version_tpl_to_str(new_version)}",
+            f"release/{version_tpl_to_str(new_version)}",
+            self._repository.staging.name,
+        )
+
+        return new_version
+
+    def prepare_release(self, bump_level: VersionLevel, environment: Environment = Environment.DEVELOPMENT) -> tuple:
         """
         Release new version, based on current version and bump-level; bump version, commit, tag and push.
         """
