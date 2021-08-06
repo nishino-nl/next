@@ -1,10 +1,13 @@
 import git
 import json
+import os
+import re
+import requests
 
 from .lib import *
 
 
-class Configuration:
+class Configuration:  # TODO: separate module
     """
     Entity that holds the configuration required for initialization of a `RepositoryManager`.
     """
@@ -111,6 +114,30 @@ class RepositoryManager:
         return self.repo.remotes.origin
 
     @property
+    def remote_url(self):
+        return self.repo.remotes.origin.url
+        # return [url for url in self.repo.remotes[0].urls][0]
+
+    @property
+    def remote_info(self):
+        """
+        Parse info about the remote from its URL.
+        At GitHub, remote URL's could be formatted like:
+
+            1. "git@github.com:<repo_owner>/<repo_name>.git"
+            2. "https://github.com/<repo_owner>/<repo_name>.git"
+
+        :return: dictionary with URL, repo owner and repo name
+        """
+        repo_owner, repo_name = re.split(r"[/:.]", self.remote_url)[-3:-1]
+        info = {
+            "url": self.remote_url,
+            "repo_owner": repo_owner,
+            "repo_name": repo_name
+        }
+        return info
+
+    @property
     def production(self):
         return self.repo.heads[self.conf.production_branch]
 
@@ -215,6 +242,44 @@ class RepositoryManager:
 
         self.origin.pull()
 
+    def create_pull_request(self, title, description, head_branch, base_branch):
+        """
+        Creates a Pull Request for the `head_branch` against the `base_branch`, based on these GitHub docs:
+
+        https://docs.github.com/en/rest/reference/pulls#create-a-pull-request
+
+        :param title: The title for the new Pull Request.
+        :param description: The contents of the Pull Request.
+        :param head_branch: The name of the branch where your changes are implemented.
+        :param base_branch: The name of the branch you want the changes pulled into.
+        """
+        git_pulls_api = f"https://api.github.com/repos/{self.remote_info['repo_owner']}/{self.remote_info['repo_name']}/pulls"
+        git_token = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "Authorization": f"token {git_token}",
+            "Content-Type": "application/json",
+            "User-Agent": "ne-ver"
+        }
+        payload = {
+            "title": title,
+            "body": description,
+            "head": head_branch,
+            "base": base_branch,
+        }
+
+        response = requests.post(
+            git_pulls_api,
+            headers=headers,
+            data=json.dumps(payload),
+        )
+
+        if not response.ok:
+            print("Request Failed: {0}".format(response.text))
+        else:
+            text = json.loads(response.text)
+            print(f"Created Pull Request at {text.get('html_url')}")
+
 
 class ReleaseManager:
     """
@@ -294,7 +359,19 @@ class ReleaseManager:
     def version(self) -> tuple:
         return self._current_version
 
-    def release(self, bump_level: VersionLevel, environment: Environment = Environment.DEVELOPMENT) -> tuple:
+    def release(self, bump_level: VersionLevel) -> tuple:
+        new_version = self.prepare_release(bump_level)
+
+        self._repository.create_pull_request(
+            f"Release {version_tpl_to_str(new_version)}",
+            f"Automated {VersionLevel(bump_level).name.lower()}-level version bump to {version_tpl_to_str(new_version)}",
+            f"release/{version_tpl_to_str(new_version)}",
+            self._repository.staging.name,
+        )
+
+        return new_version
+
+    def prepare_release(self, bump_level: VersionLevel, environment: Environment = Environment.DEVELOPMENT) -> tuple:
         """
         Release new version, based on current version and bump-level; bump version, commit, tag and push.
         """
