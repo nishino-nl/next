@@ -1,12 +1,12 @@
 import git
 import json
+import re
 import requests
-# from requests.cookies import RequestsCookieJar
 
 from .lib import *
 
 
-class Configuration:  # TODO: aparte module
+class Configuration:  # TODO: separate module
     """
     Entity that holds the configuration required for initialization of a `RepositoryManager`.
     """
@@ -111,6 +111,30 @@ class RepositoryManager:
     @property
     def origin(self):
         return self.repo.remotes.origin
+
+    @property
+    def remote_url(self):
+        return self.repo.remotes.origin.url
+        # return [url for url in self.repo.remotes[0].urls][0]
+
+    @property
+    def remote_info(self):
+        """
+        Parse info about the remote from its URL.
+        At GitHub, remote URL's could be formatted like:
+
+            1. "git@github.com:<owner>/<repo_name>.git"
+            2. "https://github.com/<owner>/<repo_name>.git"
+
+        :return: dictionary with URL, owner and repo name
+        """
+        owner, repo_name = re.split(r"[/:.]", self.remote_url)[-3:-1]
+        info = {
+            "url": self.remote_url,
+            "owner": owner,
+            "repo_name": repo_name
+        }
+        return info
 
     @property
     def production(self):

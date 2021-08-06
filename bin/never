@@ -7,7 +7,7 @@ from never.lib import bump_level_from_str, version_tpl_to_str, VersionLevel
 
 import argparse
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     load_dotenv()  # take environment variables from .env
 
     # Parse arguments with argparse (https://docs.python.org/3/library/argparse.html)
@@ -50,9 +50,10 @@ if __name__ == '__main__':
     # release bumped version
     new_version = release_manager.release(bump_level)
 
+    remote_info = repository_manager.remote_info
     repository_manager.create_pull_request(
-        "swesterveld",
-        "test-scripted-versioning-backend",
+        remote_info["owner"],
+        remote_info["repo_name"],
         f"Release {version_tpl_to_str(new_version)}",
         f"Automated {VersionLevel(bump_level).name.lower()}-level version bump to {version_tpl_to_str(new_version)}",
         f"release/{version_tpl_to_str(new_version)}",
