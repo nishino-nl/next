@@ -1,3 +1,5 @@
+import configparser
+
 import git
 import json
 import os
@@ -280,6 +282,8 @@ class RepositoryManager:
             text = json.loads(response.text)
             print(f"Created Pull Request at {text.get('html_url')}")
 
+            # TODO: Also add a label to the PR (issue) to mark it for automatic merging
+
 
 class ReleaseManager:
     """
@@ -311,15 +315,22 @@ class ReleaseManager:
             _metadata_path = os.path.normpath(f"{self.conf.repo_path}/{self.conf.package_metadata}")
 
             with open(_metadata_path, "r+") as metadata_file:
-                metadata = json.load(metadata_file)
-                print(f"current version: {metadata['version']}")
-                metadata["version"] = version_tpl_to_str(self.new_version)
+                if self.conf.package_metadata == "package.json":
+                    metadata = json.load(metadata_file)
+                    # print(f"current version: {metadata['version']}")
+                    metadata["version"] = version_tpl_to_str(new_version)
 
-                # overwrite contents of metadata file with updated metadata
-                metadata_file.seek(0)
-                json.dump(metadata, metadata_file, indent=2)
-                metadata_file.truncate()
-                self._repository.mark_to_stage(_metadata_path)
+                    # overwrite contents of metadata file with updated metadata
+                    metadata_file.seek(0)
+                    json.dump(metadata, metadata_file, indent=2)
+                    metadata_file.truncate()
+                    self._repository.mark_to_stage(_metadata_path)
+
+                if self.conf.package_metadata == "setup.cfg":
+                    parser = configparser.ConfigParser()
+                    parser.read(_metadata_path)
+                    parser["metadata"]["version"] = version_tpl_to_str(new_version)
+                    parser.write(metadata_file)
 
         return new_version
 
