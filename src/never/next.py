@@ -324,13 +324,14 @@ class ReleaseManager:
                     metadata_file.seek(0)
                     json.dump(metadata, metadata_file, indent=2)
                     metadata_file.truncate()
-                    self._repository.mark_to_stage(_metadata_path)
 
                 if self.conf.package_metadata == "setup.cfg":
                     parser = configparser.ConfigParser()
                     parser.read(_metadata_path)
                     parser["metadata"]["version"] = version_tpl_to_str(new_version)
                     parser.write(metadata_file)
+
+            self._repository.mark_to_stage(_metadata_path)
 
         return new_version
 
