@@ -37,7 +37,9 @@ A GitHub token is required to let `never` create pull requests for you.
 Make sure to generate a personal access token in [your GitHub Developer Settings](https://github.com/settings/tokens),
 with at least the scope `repo` -- for full control of private repositories -- selected.
 
-Add this token to your `.env` file, which should be based on the `.env.example` file.
+Add this token to the `.env` file at the root of your virtualenv.
+The `.env` file should be based on the `.env.example` file in the `examples` directory.
+Make sure to reload the virtualenv to activate the environment variable(s) defined in the `.env` file.
 
 
 ### settings
@@ -51,6 +53,7 @@ The settings file should be JSON-formatted. Its contents should be like:
     "backend": {
       "path": "~/repos/some-repo-clone-of-backend-project",
       "branches": {
+        "release": "release/{version}",
         "staging": "develop",
         "production": "master"
       },
@@ -59,6 +62,7 @@ The settings file should be JSON-formatted. Its contents should be like:
     "frontend": {
       "path": "/home/jdoe/repos/some-repo-clone-of-frontend-project",
       "branches": {
+        "release": "release/{version}",
         "staging": "develop",
         "production": "master"
       },
