@@ -235,6 +235,19 @@ class RepositoryManager:
             print("There are still changes not staged for commit. Either commit or discard them first")
             exit(1)
 
+    def is_behind(self, branch):
+        """
+        Check whether a branch is behind its origin.
+
+        :param branch: the branch to check for.
+        """
+        self.origin.fetch()
+        commits_behind = self.repo.iter_commits(f"{branch}..{self.origin.refs[branch]}")
+        commits_behind_count = len(list(commits_behind))
+        if commits_behind_count > 0:
+            return True
+        return False
+
     def update_head(self, head=None):
         """
         Update HEAD to branch tip on remote
@@ -346,6 +359,13 @@ class ReleaseManager:
         """
         Get version number from the VERSION file in the repository.
         """
+        try:
+            assert not self._repository.is_behind(self.conf.staging_branch)
+        except AssertionError:
+            print(f"Can't determine current version, because branch '{self.conf.staging_branch}' is behind "
+                  f"'{self._repository.origin.refs[self.conf.staging_branch]}'. First make sure it's up to date.")
+            exit(1)
+
         _version_file = os.path.normpath(f"{self.conf.repo_path}/{self.conf.version_file}")
         return read_version(_version_file)
 
