@@ -22,7 +22,12 @@ jobs:
       - run: |
           echo "Pull Request: ${PRNUM}"
           echo "Base: ${BASE}"
+          echo "      ${{ GITHUB_BASE_REF }}"
           echo "Head: ${HEAD}"
+          echo "      ${{ GITHUB_HEAD_REF }}"
+          echo "event path: ${{ GITHUB_EVENT_PATH }}"
+          echo "triggered by branch: ${{ GITHUB_REF }}"
+          echo "version: `echo $HEAD | sed -e 's/release\///'"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRNUM: ${{ github.event.pull_request.number }}
