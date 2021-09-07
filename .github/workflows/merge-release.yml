@@ -21,11 +21,13 @@ jobs:
 #      - run: gh pr merge [<number> | <url> | <branch>] [flags]
       - run: |
           echo "Pull Request: ${PRNUM}"
-          echo "PR: ${PR}"
+          echo "Base: ${BASE}"
+          echo "Head: ${HEAD}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRNUM: ${{ github.event.pull_request.number }}
-          PR: ${{ github.event.pull_request }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          HEAD: ${{ github.event.pull_request.head.ref }}
 
 #https://docs.github.com/en/actions/guides/using-github-cli-in-workflows:
 #  GITHUB_REF=refs/pull/20/merge
