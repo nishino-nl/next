@@ -22,8 +22,9 @@ jobs:
       - run: |
           echo "Pull Request: ${PRNUM}"
           echo "Base: ${BASE}"
+          echo "      ${{ env.GITHUB_BASE_REF }}"
           echo "Head: ${HEAD}"
-          echo "version: `echo $HEAD | sed -e 's/release\///'`"
+          echo "Version: `echo $HEAD | sed -e 's/release\///'`"
         #          echo "      ${{ GITHUB_BASE_REF }}"
         #          echo "      ${{ GITHUB_HEAD_REF }}"
         #          echo "event path: ${{ GITHUB_EVENT_PATH }}"
