@@ -1,0 +1,17 @@
+name: "Auto-merge release"
+
+on:
+  pull_request:
+    branches:
+#      - 'release/v[0-9]+.[0-9]+.[0-9]+'
+      - 'feature/gh1/github-action-merge-release-branch'
+    paths:
+      - 'VERSION'
+
+jobs:
+  hello_world:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Hello World"
+      - run: echo $PATH
+      - run: env
