@@ -25,12 +25,13 @@ jobs:
           echo "Head: ${HEAD}"
           echo "Version: `echo $HEAD | sed -e 's/release\///'`"
           echo "NEVER_VERSION=$(echo $HEAD | sed -e 's/release\///')" >> $GITHUB_ENV
-          echo "Version: $NEVER_VERSION"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRNUM: ${{ github.event.pull_request.number }}
           BASE: ${{ github.event.pull_request.base.ref }}
           HEAD: ${{ github.event.pull_request.head.ref }}
+      - run: |
+          echo "Version: $NEVER_VERSION"
 
 #https://docs.github.com/en/actions/guides/using-github-cli-in-workflows:
 #  GITHUB_REF=refs/pull/20/merge
