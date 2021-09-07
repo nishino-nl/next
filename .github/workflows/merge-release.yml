@@ -15,3 +15,15 @@ jobs:
       - run: echo "Hello World"
       - run: echo $PATH
       - run: env
+  auto_merge:
+    runs-on: ubuntu-latest
+    steps:
+#      - run: gh pr merge [<number> | <url> | <branch>] [flags]
+      - run: |
+          echo "Pull Request: ${PRNUM}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRNUM: ${{ github.event.pull_request.number }}
+
+#https://docs.github.com/en/actions/guides/using-github-cli-in-workflows:
+#  GITHUB_REF=refs/pull/20/merge
