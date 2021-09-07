@@ -5,8 +5,8 @@ on:
     branches:
       - 'release/v[0-9]+.[0-9]+.[0-9]+'
       - 'feature/gh1/github-action-merge-release-branch'
-    paths:
-      - 'VERSION'
+#    paths:
+#      - 'VERSION'
 
 jobs:
   hello_world:
