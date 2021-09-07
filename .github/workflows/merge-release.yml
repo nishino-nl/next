@@ -22,13 +22,10 @@ jobs:
       - run: |
           echo "Pull Request: ${PRNUM}"
           echo "Base: ${BASE}"
-          echo "      ${{ env.GITHUB_BASE_REF }}"
           echo "Head: ${HEAD}"
           echo "Version: `echo $HEAD | sed -e 's/release\///'`"
-        #          echo "      ${{ GITHUB_BASE_REF }}"
-        #          echo "      ${{ GITHUB_HEAD_REF }}"
-        #          echo "event path: ${{ GITHUB_EVENT_PATH }}"
-        #          echo "triggered by branch: ${{ GITHUB_REF }}"
+          echo "NEVER_VERSION=$(echo $HEAD | sed -e 's/release\///'" >> $GITHUB_ENV
+          echo "Version: $NEVER_VERSION"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRNUM: ${{ github.event.pull_request.number }}
