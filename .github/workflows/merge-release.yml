@@ -36,9 +36,9 @@ jobs:
           echo "Version: $NEVER_VERSION"
       - name: Merge
         run: |
-          gh auth login --with-token << "$GITHUB_TOKEN"
-          gh pr merge
+          gh pr merge $PRNUM
         env:
+          PRNUM: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 #https://docs.github.com/en/actions/guides/using-github-cli-in-workflows:
