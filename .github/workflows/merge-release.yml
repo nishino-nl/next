@@ -15,23 +15,22 @@ jobs:
       - name: Determine and remember version to release
         # Make sure to use a sed substitution that matches the naming of your release branches
         run: |
-          echo "NEVER_VERSION=$(echo $PRHEAD | sed -e 's/release\///')" >> $GITHUB_ENV
+          echo "RELEASE_VERSION=$(echo $PR_HEAD_REF | sed -e 's/release\/v\{0,1\}//')" >> $GITHUB_ENV
         env:
-          PRHEAD: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
       - uses: actions/checkout@v2
       - name: Merge pull request
         run: |
-          gh pr merge $PRNUM --merge
+          gh pr merge $PR_NUMBER --merge
         env:
-          PRNUM: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
       - uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.base.ref }}
       - name: Tag merge commit with new version
         run: |
-          git tag "${NEVER_VERSION}" $PRBASE
+          git tag "v${RELEASE_VERSION}"
           git push --tags
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PRBASE: ${{ github.event.pull_request.base.ref }}
