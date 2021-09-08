@@ -19,19 +19,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 #      - run: gh pr merge [<number> | <url> | <branch>] [flags]
-      - run: |
+      - name: Set required environment variables
+        run: |
           echo "Pull Request: ${PRNUM}"
-          echo "Base: ${BASE}"
-          echo "Head: ${HEAD}"
-          echo "Version: `echo $HEAD | sed -e 's/release\///'`"
-          echo "NEVER_VERSION=$(echo $HEAD | sed -e 's/release\///')" >> $GITHUB_ENV
+          echo "Base: ${PRBASE}"
+          echo "Head: ${PRHEAD}"
+          echo "Version: `echo $PRHEAD | sed -e 's/release\///'`"
+          echo "NEVER_VERSION=$(echo $PRHEAD | sed -e 's/release\///')" >> $GITHUB_ENV
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRNUM: ${{ github.event.pull_request.number }}
-          BASE: ${{ github.event.pull_request.base.ref }}
-          HEAD: ${{ github.event.pull_request.head.ref }}
-      - run: |
+          PRBASE: ${{ github.event.pull_request.base.ref }}
+          PRHEAD: ${{ github.event.pull_request.head.ref }}
+      - name: Test one of the env vars
+        run: |
           echo "Version: $NEVER_VERSION"
+      - name: Merge
+        run: |
+          gh pr merge
 
 #https://docs.github.com/en/actions/guides/using-github-cli-in-workflows:
 #  GITHUB_REF=refs/pull/20/merge
+
+# TODO:
+# - merge
+# - tag
