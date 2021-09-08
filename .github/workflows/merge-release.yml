@@ -25,6 +25,9 @@ jobs:
         env:
           PRNUM: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
       - name: Tag merge commit with new version
         run: |
           git tag "${NEVER_VERSION}" $PRBASE
