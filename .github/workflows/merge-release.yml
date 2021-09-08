@@ -43,10 +43,11 @@ jobs:
         env:
           PRNUM: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
       - name: Tag
         run: |
-          env
-          git checkout $PRBASE
           git status
           git tag "v${NEVER_VERSION}" $PRBASE
           git push --tags
