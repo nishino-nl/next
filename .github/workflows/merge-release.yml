@@ -43,6 +43,18 @@ jobs:
         env:
           PRNUM: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag
+        run: |
+          env
+          git checkout $PRBASE
+          git status
+          git tag "v${NEVER_VERSION}" $PRBASE
+          git push --tags
+          git log --oneline | head -n3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRBASE: ${{ github.event.pull_request.base.ref }}
+          PRHEAD: ${{ github.event.pull_request.head.ref }}
 
 #https://docs.github.com/en/actions/guides/using-github-cli-in-workflows:
 #  GITHUB_REF=refs/pull/20/merge
