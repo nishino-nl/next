@@ -36,7 +36,7 @@ jobs:
           echo "Version: $NEVER_VERSION"
       - name: Merge
         run: |
-          gh auth login --with-token < $GITHUB_TOKEN
+          gh auth login
           gh pr merge
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
