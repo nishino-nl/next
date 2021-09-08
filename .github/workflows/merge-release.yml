@@ -1,65 +1,34 @@
-name: "Auto-merge release"
+name: "Auto-merge release branch"
 
 on:
   pull_request:
     branches:
-      - 'release/v[0-9]+.[0-9]+.[0-9]+'
+      - 'release/v?[0-9]+.[0-9]+.[0-9]+'
       - 'feature/gh1/github-action-merge-release-branch'
 #    paths:
 #      - 'VERSION'
 
 jobs:
-  hello_world:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Hello World"
-      - run: echo $PATH
-      - run: env
   auto_merge:
     runs-on: ubuntu-latest
     steps:
-#      - run: gh pr merge [<number> | <url> | <branch>] [flags]
-      - name: Set required environment variables
+      - name: Determine and remember version to release
+        # Make sure to use a sed substitution that matches the naming of your release branches
         run: |
-          echo "Pull Request: ${PRNUM}"
-          echo "Base: ${PRBASE}"
-          echo "Head: ${PRHEAD}"
-          echo "Version: `echo $PRHEAD | sed -e 's/release\///'`"
           echo "NEVER_VERSION=$(echo $PRHEAD | sed -e 's/release\///')" >> $GITHUB_ENV
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PRNUM: ${{ github.event.pull_request.number }}
-          PRBASE: ${{ github.event.pull_request.base.ref }}
           PRHEAD: ${{ github.event.pull_request.head.ref }}
-      - name: Test one of the env vars
-        run: |
-          echo "Version: $NEVER_VERSION"
       - uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-      - name: Merge
+      - name: Merge pull request
         run: |
           gh pr merge $PRNUM --merge
         env:
           PRNUM: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
-      - name: Tag
+      - name: Tag merge commit with new version
         run: |
-          git status
-          git tag "v${NEVER_VERSION}" $PRBASE
+          git tag "${NEVER_VERSION}" $PRBASE
           git push --tags
-          git log --oneline | head -n3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRBASE: ${{ github.event.pull_request.base.ref }}
-          PRHEAD: ${{ github.event.pull_request.head.ref }}
-
-#https://docs.github.com/en/actions/guides/using-github-cli-in-workflows:
-#  GITHUB_REF=refs/pull/20/merge
-
-# TODO:
-# - merge
-# - tag
