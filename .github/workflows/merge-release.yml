@@ -23,7 +23,6 @@ jobs:
         run: |
           gh pr merge $PR_NUMBER --merge
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
       - uses: actions/checkout@v2
         with:
@@ -32,5 +31,3 @@ jobs:
         run: |
           git tag "v${RELEASE_VERSION}"
           git push --tags
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
