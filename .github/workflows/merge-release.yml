@@ -34,6 +34,7 @@ jobs:
           echo "GITHUB_BASE_REF: $GITHUB_BASE_REF"
           echo "github.event.pull_request.head.ref: ${{ github.event.pull_request.head.ref }}
           echo "github.event.pull_request.base.ref: ${{ github.event.pull_request.base.ref }}
+          git fetch --all
           git checkout ${{ github.event.pull_request.base.ref }}
           git tag "v${RELEASE_VERSION}"
           git push --tags
