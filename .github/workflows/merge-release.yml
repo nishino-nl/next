@@ -36,7 +36,7 @@ jobs:
           echo "Version: $NEVER_VERSION"
       - name: Merge
         run: |
-          gh pr merge $PRNUM
+          gh pr merge $PRNUM --merge
         env:
           PRNUM: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
