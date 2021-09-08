@@ -36,12 +36,11 @@ jobs:
           echo "Version: $NEVER_VERSION"
       - uses: actions/checkout@v2
         with:
-          ref: $PRHEAD
+          ref: ${{ github.event.pull_request.head.ref }}
       - name: Merge
         run: |
           gh pr merge $PRNUM --merge
         env:
-          PRHEAD: ${{ github.event.pull_request.head.ref }}
           PRNUM: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
