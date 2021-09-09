@@ -186,9 +186,9 @@ class RepositoryManager:
     #     self.repo.git.merge(self.staging)
     #     self.origin.push()
 
-    def stage_commit_tag_push(self, original_version: tuple, new_version: tuple, bump_level: VersionLevel) -> None:
+    def stage_commit_push(self, original_version: tuple, new_version: tuple, bump_level: VersionLevel) -> None:
         """
-        Stage and commit files marked to stage, add tag and push.
+        Stage and commit files marked to stage, and push.
         """
         branch_name = self.repo.active_branch
 
@@ -201,20 +201,19 @@ class RepositoryManager:
         commit_msg = f"automated {bump_level_str}-level version bump from {original_version_str} to {new_version_str}"
         self.index.commit(commit_msg)
 
-        self.tag_version(new_version)
         self.origin.push(refspec=f"{branch_name}:{branch_name}")
 
 
-    def tag_version(self, version: tuple) -> None:
-        """
-        Tag current HEAD with given version.
-
-        :param version: the version to use for the tag
-        """
-        tag_str = f"v{version_tpl_to_str(version)}"
-        new_tag = self.repo.create_tag(tag_str)
-        self.origin.push(new_tag)
-        print(f"added tag: {new_tag}")
+    # def tag_version(self, version: tuple) -> None:
+    #     """
+    #     Tag current HEAD with given version.
+    #
+    #     :param version: the version to use for the tag
+    #     """
+    #     tag_str = f"v{version_tpl_to_str(version)}"
+    #     new_tag = self.repo.create_tag(tag_str)
+    #     self.origin.push(new_tag)
+    #     print(f"added tag: {new_tag}")
 
     def verify_repo_clean(self) -> None:
         """
@@ -427,9 +426,9 @@ class ReleaseManager:
         else:
             print(f"releasing to existing branch: {self._repository.repo.active_branch}")
 
-        # bump version, commit, tag and push to origin
+        # bump version, commit and push to origin
         new_version = self.bump_version()
-        self._repository.stage_commit_tag_push(original_version, new_version, bump_level)
+        self._repository.stage_commit_push(original_version, new_version, bump_level)
 
         # return to branch where we originally started from
         if self._repository._prior_branch:

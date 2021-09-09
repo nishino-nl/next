@@ -1,0 +1,62 @@
+name: "Auto-merge release branch"
+
+on:
+  pull_request:
+    branches:
+      - 'develop'
+    paths:
+      - 'VERSION'
+
+jobs:
+  auto_merge:
+    # only run job on branches starting with 'release/'
+    if: startsWith( github.event.pull_request.head.ref, 'release/' )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine version to release
+        run: |
+          echo "RELEASE_TAG=v$(echo $RELEASE_BRANCH | sed -e 's/release\/v\{0,1\}//')" >> $GITHUB_ENV
+        env:
+          RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          ssh-key: ${{ secrets.NEVER_DEPLOY_KEY }}
+      - name: Check existence version tag
+        run: |
+          [ ! "$(git show-ref --tags --quiet ${RELEASE_TAG})" ]
+      - name: Setup SSH Keys and known_hosts
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add - <<< "${{ secrets.NEVER_DEPLOY_KEY }}"
+      - name: Merge pull request
+        run: |
+          if [[ "$RELEASE_BRANCH" =~ ^release/v?[0-9]+(.[0-9]+){2} ]]; then
+          git config --global user.email "oss@silwesterveld.com"
+          git config --global user.name "Ne-ver"
+          git fetch
+          git checkout ${{ github.event.pull_request.head.ref }}
+          git checkout ${{ github.event.pull_request.base.ref }}
+          git merge $RELEASE_BRANCH
+          git push
+          git branch --delete --force ${{ github.event.pull_request.head.ref }}
+          git push origin :${{ github.event.pull_request.head.ref }}
+          else
+          echo "Not merging because the source branch is not a release branch"
+          exit 1
+          fi
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+          RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
+      - name: Add version tag
+        run: |
+          git checkout ${{ github.event.pull_request.base.ref }}
+          git pull
+          git tag $RELEASE_TAG; git push --tags
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
