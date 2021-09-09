@@ -3,38 +3,42 @@ name: "Auto-merge release branch"
 on:
   pull_request:
     branches:
-      - 'release/v?[0-9]+.[0-9]+.[0-9]+'
-      - 'feature/gh1/github-action-merge-release-branch'
-#    paths:
-#      - 'VERSION'
+      - 'develop'
+    paths:
+      - 'VERSION'
 
 jobs:
   auto_merge:
     runs-on: ubuntu-latest
     steps:
-      - name: Determine and remember version to release
-        # Make sure to use a sed substitution that matches the naming of your release branches
+      - name: Determine version to release
         run: |
-          echo "RELEASE_VERSION=$(echo $PR_HEAD_REF | sed -e 's/release\/v\{0,1\}//')" >> $GITHUB_ENV
+          echo "RELEASE_TAG=v$(echo $SOURCE_BRANCH | sed -e 's/release\/v\{0,1\}//')" >> $GITHUB_ENV
         env:
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-      - uses: actions/checkout@v2
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+      - name: Check existence version tag
+        run: |
+          git show-ref --tags ${RELEASE_TAG} --quiet && exit 1
       - name: Merge pull request
         run: |
-          gh pr merge $PR_NUMBER --merge
+          echo "version: $RELEASE_TAG"
+          echo "source: $SOURCE_BRANCH"
+          if [[ "$SOURCE_BRANCH" =~ ^release/v?[0-9]+(.[0-9]+){2} ]]; then
+          gh pr merge ${{ github.event.pull_request.number }} --squash --delete-branch
+          else
+          echo "Not merging because the source branch is not a release branch"
+          exit 1
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-#      - uses: actions/checkout@v2
-#        with:
-#          ref: ${{ github.event.pull_request.base.ref }}
-      - name: Tag merge commit with new version
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+      - name: Add version tag
         run: |
-          echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF"
-          echo "GITHUB_BASE_REF: $GITHUB_BASE_REF"
-          echo "github.event.pull_request.head.ref: ${{ github.event.pull_request.head.ref }}
-          echo "github.event.pull_request.base.ref: ${{ github.event.pull_request.base.ref }}
-          git fetch --all
           git checkout ${{ github.event.pull_request.base.ref }}
-          git tag "v${RELEASE_VERSION}"
-          git push --tags
+          git pull
+          git tag ${RELEASE_TAG}
+          git push origin ${RELEASE_TAG}
