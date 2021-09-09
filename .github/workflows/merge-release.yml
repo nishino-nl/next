@@ -22,7 +22,11 @@ jobs:
           ref: ${{ github.event.pull_request.base.ref }}
       - name: Check existence version tag
         run: |
-          git show-ref --tags ${RELEASE_TAG} --quiet && exit 1
+          echo "version: $RELEASE_TAG"
+          if [[ "$(git show-ref --tags ${RELEASE_TAG} --quiet)" =~ ${RELEASE_TAG} ]]; then
+          echo "Not merging because the release tag ${RELEASE_TAG} already exists"
+          exit 1
+          fi
       - name: Merge pull request
         run: |
           echo "version: $RELEASE_TAG"
