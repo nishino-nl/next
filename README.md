@@ -2,7 +2,7 @@
 Ne-ver again the manual hassle to release a next version.
 
 
-## how to use
+## basic usage
 
 Setup an environment with the dependencies once, if you haven't done that yet.
 
@@ -31,10 +31,10 @@ Website: https://github.com/swesterveld/next
 ```
 
 
-### GitHub token
+### GitHub Personal Access Token
 
-A GitHub token is required to let `never` create pull requests for you.
-Make sure to generate a personal access token in [your GitHub Developer Settings](https://github.com/settings/tokens),
+A GitHub Personal Access Token (PAT) is required to let `never` create pull requests for you.
+Make sure to generate a PAT in [your GitHub Developer Settings](https://github.com/settings/tokens),
 with at least the scope `repo` -- for full control of private repositories -- selected.
 
 Add this token to the `.env` file at the root of your virtualenv.
@@ -81,6 +81,27 @@ An example, to bump the version from `x.y.z` to `x.y.z+1` for project `frontend`
 ```commandline
 never patch --settings -f etc/never.config.json -p frontend
 ```
+
+
+## advanced usage: auto merge
+
+When you would like to automagically merge the release branch created by `never` on GitHub, you should use a deploy key.
+To create one, issue:
+```commandline
+ssh-keygen -t ed25519 -C "<comment>" -f <filename>
+```
+Where the outputfile should be specified by `<filename>`, and `-C "<comment>"` is optional, and could contain any
+comment that may be useful to help identify the key.
+
+This results in a key-pair, with its private part in `<filename>` and its public part in `<filename>.pub`.
+In your repository settings (at https://github.com/<organization>/<repository>/settings), you should use the contents of
+those files to add a deploy key and a secret:
+* The public part should be added to your repository as a deploy key *with write access*.
+* The private part should be added as a new repository secret called `NEVER_DEPLOY_KEY`.
+
+Besides that, a GitHub Action that will use these this key-pair to automagically merge the release branch is required.
+An example could be found at `.github/workflows/merge-release.yml` and should be copied to `.github/workflows/` in your
+repository.
 
 
 ## development
