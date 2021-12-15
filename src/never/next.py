@@ -141,11 +141,27 @@ class RepositoryManager:
 
     @property
     def production(self):
-        return self.repo.heads[self.conf.production_branch]
+        try:
+            repo = self.repo.heads[self.conf.production_branch]
+            return repo
+        except IndexError as e:
+            print(
+                f"The configured production branch '{self.conf.production_branch}' is not part of the workspace yet.",
+                "Make sure the branch has been checked out first."
+            )
+            exit(1)
 
     @property
     def staging(self):
-        return self.repo.heads[self.conf.staging_branch]
+        try:
+            repo = self.repo.heads[self.conf.staging_branch]
+            return repo
+        except IndexError as e:
+            print(
+                f"The configured staging branch '{self.conf.staging_branch}' is not part of the workspace yet.",
+                "Make sure the branch has been checked out first."
+            )
+            exit(1)
 
     def mark_to_stage(self, file_path):
         self._to_stage.append(file_path)
@@ -240,6 +256,14 @@ class RepositoryManager:
 
         :param branch: the branch to check for.
         """
+        try:
+            self.repo.heads[branch]
+        except IndexError as e:
+            print(
+                f"The branch '{branch}' is not part of the workspace yet.",
+                "Make sure the branch has been checked out first."
+            )
+            exit(1)
         self.origin.fetch()
         commits_behind = self.repo.iter_commits(f"{branch}..{self.origin.refs[branch]}")
         commits_behind_count = len(list(commits_behind))
