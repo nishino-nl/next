@@ -141,11 +141,27 @@ class RepositoryManager:
 
     @property
     def production(self):
-        return self.repo.heads[self.conf.production_branch]
+        try:
+            repo = self.repo.heads[self.conf.production_branch]
+            return repo
+        except IndexError as e:
+            print(
+                f"The configured production branch '{self.conf.production_branch}' is not part of the workspace yet.",
+                "Make sure the branch has been checked out first."
+            )
+            exit(1)
 
     @property
     def staging(self):
-        return self.repo.heads[self.conf.staging_branch]
+        try:
+            repo = self.repo.heads[self.conf.staging_branch]
+            return repo
+        except IndexError as e:
+            print(
+                f"The configured staging branch '{self.conf.staging_branch}' is not part of the workspace yet.",
+                "Make sure the branch has been checked out first."
+            )
+            exit(1)
 
     def mark_to_stage(self, file_path):
         self._to_stage.append(file_path)
