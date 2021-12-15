@@ -256,6 +256,14 @@ class RepositoryManager:
 
         :param branch: the branch to check for.
         """
+        try:
+            self.repo.heads[branch]
+        except IndexError as e:
+            print(
+                f"The branch '{branch}' is not part of the workspace yet.",
+                "Make sure the branch has been checked out first."
+            )
+            exit(1)
         self.origin.fetch()
         commits_behind = self.repo.iter_commits(f"{branch}..{self.origin.refs[branch]}")
         commits_behind_count = len(list(commits_behind))
